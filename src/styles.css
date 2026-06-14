@@ -91,6 +91,16 @@ input {
   width: min(760px, calc(100vw - 48px));
 }
 
+.ui-stack.minimized {
+  width: auto;
+}
+
+.utility-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .panel {
   position: relative;
   border: 1.5px solid #342d22;
@@ -128,6 +138,35 @@ input {
   font-size: 0.86rem;
   font-weight: 800;
   padding: 7px 10px;
+}
+
+.panel-toggle {
+  width: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  border-color: #342d22;
+  background: rgba(255, 248, 231, 0.92);
+  color: #30291f;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.panel-minimize {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 2;
+  width: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  border-color: rgba(52, 45, 34, 0.72);
+  background: rgba(255, 248, 231, 0.92);
+  color: #30291f;
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0 0 2px;
+  box-shadow: 1px 1px 0 rgba(52, 45, 34, 0.16);
 }
 
 .score-line {
@@ -660,8 +699,17 @@ button:disabled {
     gap: 10px;
   }
 
+  .ui-stack.minimized {
+    right: auto;
+    width: auto;
+  }
+
   .ui-stack:has(.result-panel) {
     width: calc(100vw - 24px);
+  }
+
+  .ui-stack.minimized:has(.result-panel) {
+    width: auto;
   }
 
   .panel {

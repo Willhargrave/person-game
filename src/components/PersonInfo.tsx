@@ -6,6 +6,7 @@ interface PersonInfoProps {
   hints: PersonHints;
   revealedHints: RevealedHints;
   onRevealHint: (hint: HintKey) => void;
+  onMinimize: () => void;
 }
 
 const hintLabels: Record<HintKey, string> = {
@@ -16,12 +17,26 @@ const hintLabels: Record<HintKey, string> = {
 
 const hintKeys: HintKey[] = ['methodOfDeath', 'gender', 'profession'];
 
-export function PersonInfo({ person, hints, revealedHints, onRevealHint }: PersonInfoProps) {
+export function PersonInfo({
+  person,
+  hints,
+  revealedHints,
+  onRevealHint,
+  onMinimize,
+}: PersonInfoProps) {
   const birthFlag = getPlaceFlag(person.birthPlace);
   const deathFlag = getPlaceFlag(person.deathPlace);
 
   return (
     <section className="panel person-info" aria-label="Known clues">
+      <button
+        className="panel-minimize"
+        type="button"
+        onClick={onMinimize}
+        aria-label="Minimize panel"
+      >
+        -
+      </button>
       <div className="panel-heading">
         <h1>Trace My Life</h1>
       </div>

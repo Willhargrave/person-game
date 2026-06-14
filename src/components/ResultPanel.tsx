@@ -9,6 +9,7 @@ interface ResultPanelProps {
   guess: string;
   hints: PersonHints;
   onNextRound: () => void;
+  onMinimize: () => void;
 }
 
 interface WikipediaSummary {
@@ -32,7 +33,14 @@ interface PersonSummary {
 const getSummaryUrl = (name: string) =>
   `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`;
 
-export function ResultPanel({ result, person, guess, hints, onNextRound }: ResultPanelProps) {
+export function ResultPanel({
+  result,
+  person,
+  guess,
+  hints,
+  onNextRound,
+  onMinimize,
+}: ResultPanelProps) {
   const panelRef = useRef<HTMLElement | null>(null);
   const [summary, setSummary] = useState<PersonSummary | null>(null);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
@@ -107,6 +115,14 @@ export function ResultPanel({ result, person, guess, hints, onNextRound }: Resul
 
   return (
     <aside ref={panelRef} className={`panel result-panel ${isCorrect ? 'correct' : 'incorrect'}`}>
+      <button
+        className="panel-minimize"
+        type="button"
+        onClick={onMinimize}
+        aria-label="Minimize panel"
+      >
+        -
+      </button>
       <p className="result-kicker">
         {isCorrect
           ? 'Correct'

@@ -46,6 +46,7 @@ function App() {
   const [score, setScore] = useState(0);
   const [revealedHints, setRevealedHints] = useState<RevealedHints>(initialRevealedHints);
   const [isRevealLoading, setIsRevealLoading] = useState(false);
+  const [isPanelMinimized, setIsPanelMinimized] = useState(false);
   const revealTimerRef = useRef<number | null>(null);
 
   const malformedCount = Array.isArray(peopleData) ? peopleData.length - people.length : 0;
@@ -121,6 +122,7 @@ function App() {
     setSubmittedGuess('');
     setResult(null);
     setIsRevealLoading(false);
+    setIsPanelMinimized(false);
     setRevealedHints(initialRevealedHints);
   };
 
@@ -156,47 +158,78 @@ function App() {
     <main className="app-shell">
       <GameMap person={person} />
       <div className="grain" aria-hidden="true" />
-      <div className="ui-stack">
-        <div className="score-panel" aria-label="Current score">
-          Score: {score}
+      <div className={`ui-stack ${isPanelMinimized ? 'minimized' : ''}`}>
+        <div className="utility-row">
+          <div className="score-panel" aria-label="Current score">
+            Score: {score}
+          </div>
+          {isPanelMinimized ? (
+            <button
+              className="panel-toggle"
+              type="button"
+              onClick={() => setIsPanelMinimized(false)}
+              aria-label="Restore panel"
+              aria-expanded={false}
+            >
+              +
+            </button>
+          ) : null}
         </div>
-        {isRevealLoading ? (
-          <section className="panel reveal-loading-panel" aria-live="polite" aria-label="Loading result">
-            <span className="loading-spinner" aria-hidden="true" />
-            <p>Revealing...</p>
-          </section>
-        ) : result ? (
-          <ResultPanel
-            result={result}
-            person={person}
-            guess={submittedGuess}
-            hints={currentHints}
-            onNextRound={handleNextRound}
-          />
-        ) : (
-          <PersonInfo
-            person={person}
-            hints={currentHints}
-            revealedHints={revealedHints}
-            onRevealHint={handleRevealHint}
-          />
-        )}
-        {!result && !isRevealLoading ? (
-          <GuessPanel
-            guess={guess}
-            result={result}
-            people={people}
-            onGuessChange={setGuess}
-            onSubmit={handleSubmit}
-            onSkip={handleSkip}
-            onNextRound={handleNextRound}
-          />
-        ) : null}
-        {malformedCount > 0 ? (
-          <p className="data-warning">
-            {malformedCount} malformed seed {malformedCount === 1 ? 'record was' : 'records were'}{' '}
-            skipped.
-          </p>
+        {!isPanelMinimized ? (
+          <>
+            {isRevealLoading ? (
+              <section
+                className="panel reveal-loading-panel"
+                aria-live="polite"
+                aria-label="Loading result"
+              >
+                <button
+                  className="panel-minimize"
+                  type="button"
+                  onClick={() => setIsPanelMinimized(true)}
+                  aria-label="Minimize panel"
+                >
+                  -
+                </button>
+                <span className="loading-spinner" aria-hidden="true" />
+                <p>Revealing...</p>
+              </section>
+            ) : result ? (
+              <ResultPanel
+                result={result}
+                person={person}
+                guess={submittedGuess}
+                hints={currentHints}
+                onNextRound={handleNextRound}
+                onMinimize={() => setIsPanelMinimized(true)}
+              />
+            ) : (
+              <PersonInfo
+                person={person}
+                hints={currentHints}
+                revealedHints={revealedHints}
+                onRevealHint={handleRevealHint}
+                onMinimize={() => setIsPanelMinimized(true)}
+              />
+            )}
+            {!result && !isRevealLoading ? (
+              <GuessPanel
+                guess={guess}
+                result={result}
+                people={people}
+                onGuessChange={setGuess}
+                onSubmit={handleSubmit}
+                onSkip={handleSkip}
+                onNextRound={handleNextRound}
+              />
+            ) : null}
+            {malformedCount > 0 ? (
+              <p className="data-warning">
+                {malformedCount} malformed seed{' '}
+                {malformedCount === 1 ? 'record was' : 'records were'} skipped.
+              </p>
+            ) : null}
+          </>
         ) : null}
       </div>
     </main>
