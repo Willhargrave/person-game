@@ -874,6 +874,14 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .suggestions {
+    top: auto;
+    bottom: calc(100% + 6px);
+    max-height: min(42vh, 260px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
   .hint-list {
     grid-template-columns: 1fr;
   }
