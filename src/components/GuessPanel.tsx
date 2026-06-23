@@ -11,6 +11,7 @@ interface GuessPanelProps {
   onSubmit: () => void;
   onSkip: () => void;
   onNextRound: () => void;
+  skipLabel?: string;
 }
 
 export function GuessPanel({
@@ -21,6 +22,7 @@ export function GuessPanel({
   onSubmit,
   onSkip,
   onNextRound,
+  skipLabel = 'Skip',
 }: GuessPanelProps) {
   const isSubmitted = result !== null;
   const normalizedGuess = normalizeGuess(guess);
@@ -88,7 +90,7 @@ export function GuessPanel({
       </div>
       {!isSubmitted ? (
         <button className="secondary-button" type="button" onClick={onSkip}>
-          Skip
+          {skipLabel}
         </button>
       ) : null}
       {isSubmitted ? (

@@ -5,7 +5,25 @@ import { PersonInfo } from './components/PersonInfo';
 import { ResultPanel } from './components/ResultPanel';
 import peopleData from './data/historicalPeople.json';
 import { fallbackHints, personHints } from './data/personHints';
-import type { GuessResult, HintKey, HistoricalPerson, RevealedHints } from './types';
+import type {
+  DailyLeaderboardEntry,
+  GameMode,
+  GuessResult,
+  HintKey,
+  HistoricalPerson,
+  RevealedHints,
+} from './types';
+import {
+  createDailyShareText,
+  dailyInitialLives,
+  getDailyDateKey,
+  getDailyMissOutcome,
+  getDailyPeople,
+  getDailyScore,
+  getRemainingDailyHelperActions,
+  readDailyLeaderboard,
+  saveDailyLeaderboardEntry,
+} from './utils/dailyChallenge';
 import { getValidPeople, isCorrectGuess, pickRandomPerson } from './utils/people';
 
 const initialRevealedHints: RevealedHints = {
@@ -13,6 +31,18 @@ const initialRevealedHints: RevealedHints = {
   gender: false,
   profession: false,
 };
+
+const initialDailyUnusedHints: RevealedHints = {
+  methodOfDeath: true,
+  gender: true,
+  profession: true,
+};
+
+const dailyHelperIcons: Array<{ hint: HintKey; icon: string; label: string }> = [
+  { hint: 'methodOfDeath', icon: '☠', label: 'Cause of death helper' },
+  { hint: 'gender', icon: '⚧', label: 'Gender helper' },
+  { hint: 'profession', icon: '⚒', label: 'Profession helper' },
+];
 
 const getPointsForHintCount = (hintCount: number) => {
   if (hintCount === 0) {
@@ -32,18 +62,37 @@ const getPointsForHintCount = (hintCount: number) => {
 
 const revealDelayMs = 450;
 
+const getEntryId = () => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
 function App() {
   const people = useMemo(() => getValidPeople(peopleData), []);
-  const firstPerson = useMemo(() => pickRandomPerson(people), [people]);
-  const [person, setPerson] = useState<HistoricalPerson | null>(firstPerson);
-  const [usedPersonIds, setUsedPersonIds] = useState<string[]>(() =>
-    firstPerson ? [firstPerson.id] : [],
-  );
+  const dailyDateKey = useMemo(() => getDailyDateKey(), []);
+  const dailyPeople = useMemo(() => getDailyPeople(people, dailyDateKey), [dailyDateKey, people]);
+  const [mode, setMode] = useState<GameMode | null>(null);
+  const [username, setUsername] = useState('');
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [person, setPerson] = useState<HistoricalPerson | null>(null);
+  const [usedPersonIds, setUsedPersonIds] = useState<string[]>([]);
+  const [dailyRoundIndex, setDailyRoundIndex] = useState(0);
   const [guess, setGuess] = useState('');
   const [submittedGuess, setSubmittedGuess] = useState('');
   const [result, setResult] = useState<GuessResult>(null);
   const [isSessionComplete, setIsSessionComplete] = useState(false);
   const [score, setScore] = useState(0);
+  const [dailyCorrectGuesses, setDailyCorrectGuesses] = useState(0);
+  const [dailyLives, setDailyLives] = useState(dailyInitialLives);
+  const [dailyUnusedHints, setDailyUnusedHints] = useState<RevealedHints>(initialDailyUnusedHints);
+  const [isDailyGameOver, setIsDailyGameOver] = useState(false);
+  const [dailyLeaderboard, setDailyLeaderboard] = useState<DailyLeaderboardEntry[]>([]);
+  const [dailyEntry, setDailyEntry] = useState<DailyLeaderboardEntry | null>(null);
+  const [dailyEndReason, setDailyEndReason] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [revealedHints, setRevealedHints] = useState<RevealedHints>(initialRevealedHints);
   const [isRevealLoading, setIsRevealLoading] = useState(false);
   const [isPanelMinimized, setIsPanelMinimized] = useState(false);
@@ -52,6 +101,17 @@ function App() {
   const malformedCount = Array.isArray(peopleData) ? peopleData.length - people.length : 0;
   const currentHints = person ? (personHints[person.id] ?? fallbackHints) : fallbackHints;
   const revealedHintCount = Object.values(revealedHints).filter(Boolean).length;
+  const isDailyMode = mode === 'daily';
+  const isDailyLastPerson = isDailyMode && dailyRoundIndex >= dailyPeople.length - 1;
+  const shouldDailyEndAfterResult =
+    isDailyMode &&
+    result !== null &&
+    (isDailyGameOver || (result === 'correct' && isDailyLastPerson));
+  const dailyBlockedHints: RevealedHints = {
+    methodOfDeath: !dailyUnusedHints.methodOfDeath,
+    gender: !dailyUnusedHints.gender,
+    profession: !dailyUnusedHints.profession,
+  };
 
   useEffect(
     () => () => {
@@ -62,11 +122,82 @@ function App() {
     [],
   );
 
-  const revealResult = (nextResult: Exclude<GuessResult, null>, nextGuess: string) => {
+  const clearRevealTimer = () => {
     if (revealTimerRef.current) {
       window.clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
+  };
+
+  const resetRoundState = () => {
+    setGuess('');
+    setSubmittedGuess('');
+    setResult(null);
+    setIsRevealLoading(false);
+    setIsPanelMinimized(false);
+    setRevealedHints({ ...initialRevealedHints });
+  };
+
+  const loadLeaderboard = () => {
+    setDailyLeaderboard(readDailyLeaderboard(window.localStorage, dailyDateKey));
+  };
+
+  const startPractice = () => {
+    clearRevealTimer();
+    const firstPerson = pickRandomPerson(people);
+
+    setMode('practice');
+    setPerson(firstPerson);
+    setUsedPersonIds(firstPerson ? [firstPerson.id] : []);
+    setIsSessionComplete(false);
+    setScore(0);
+    setDailyEntry(null);
+    setDailyEndReason(null);
+    setShareStatus(null);
+    resetRoundState();
+  };
+
+  const startDaily = () => {
+    const trimmedUsername = username.trim();
+
+    if (!trimmedUsername) {
+      setUsernameError('Enter a username to play Daily.');
+      return;
     }
 
+    clearRevealTimer();
+    setUsername(trimmedUsername);
+    setUsernameError(null);
+    setMode('daily');
+    setPerson(dailyPeople[0] ?? null);
+    setUsedPersonIds([]);
+    setDailyRoundIndex(0);
+    setDailyCorrectGuesses(0);
+    setDailyLives(dailyInitialLives);
+    setDailyUnusedHints({ ...initialDailyUnusedHints });
+    setIsDailyGameOver(false);
+    setDailyEntry(null);
+    setDailyEndReason(null);
+    setShareStatus(null);
+    setIsSessionComplete(false);
+    loadLeaderboard();
+    resetRoundState();
+  };
+
+  const returnToModeSelect = () => {
+    clearRevealTimer();
+    setMode(null);
+    setPerson(null);
+    setIsSessionComplete(false);
+    setDailyEntry(null);
+    setDailyEndReason(null);
+    setIsDailyGameOver(false);
+    setShareStatus(null);
+    resetRoundState();
+  };
+
+  const revealResult = (nextResult: Exclude<GuessResult, null>, nextGuess: string) => {
+    clearRevealTimer();
     setSubmittedGuess(nextGuess);
     setIsRevealLoading(true);
     revealTimerRef.current = window.setTimeout(() => {
@@ -76,7 +207,40 @@ function App() {
     }, revealDelayMs);
   };
 
+  const finishDaily = (reason: string) => {
+    const remainingHelperActions = getRemainingDailyHelperActions(dailyUnusedHints, dailyLives);
+    const entry: DailyLeaderboardEntry = {
+      id: getEntryId(),
+      username: username.trim(),
+      score: getDailyScore(dailyCorrectGuesses, remainingHelperActions),
+      correctGuesses: dailyCorrectGuesses,
+      remainingHelperActions,
+      completedAt: new Date().toISOString(),
+    };
+
+    const nextLeaderboard = saveDailyLeaderboardEntry(window.localStorage, dailyDateKey, entry);
+    setDailyEntry(entry);
+    setDailyLeaderboard(nextLeaderboard);
+    setDailyEndReason(reason);
+    setIsSessionComplete(true);
+    setPerson(null);
+    setResult(null);
+    setIsRevealLoading(false);
+    setIsPanelMinimized(false);
+  };
+
   const handleRevealHint = (hint: HintKey) => {
+    if (isDailyMode) {
+      if (!dailyUnusedHints[hint]) {
+        return;
+      }
+
+      setDailyUnusedHints((currentHintsState) => ({
+        ...currentHintsState,
+        [hint]: false,
+      }));
+    }
+
     setRevealedHints((currentHintsState) => ({
       ...currentHintsState,
       [hint]: true,
@@ -92,6 +256,18 @@ function App() {
 
     revealResult(nextResult, guess.trim());
 
+    if (isDailyMode) {
+      if (nextResult === 'correct') {
+        setDailyCorrectGuesses((currentScore) => currentScore + 1);
+      } else {
+        const missOutcome = getDailyMissOutcome(dailyLives);
+        setDailyLives(missOutcome.remainingLives);
+        setIsDailyGameOver(missOutcome.isGameOver);
+      }
+
+      return;
+    }
+
     if (nextResult === 'correct') {
       setScore((currentScore) => currentScore + getPointsForHintCount(revealedHintCount));
     }
@@ -99,12 +275,32 @@ function App() {
 
   const handleSkip = () => {
     revealResult('incorrect', '__SKIPPED__');
+
+    if (isDailyMode) {
+      setDailyLives(0);
+      setIsDailyGameOver(true);
+    }
   };
 
   const handleNextRound = () => {
-    if (revealTimerRef.current) {
-      window.clearTimeout(revealTimerRef.current);
-      revealTimerRef.current = null;
+    clearRevealTimer();
+
+    if (isDailyMode) {
+      if (isDailyGameOver) {
+        finishDaily('You ran out of lives.');
+        return;
+      }
+
+      if (isDailyLastPerson) {
+        finishDaily('You completed every person in today\'s challenge.');
+        return;
+      }
+
+      const nextRoundIndex = dailyRoundIndex + 1;
+      setDailyRoundIndex(nextRoundIndex);
+      setPerson(dailyPeople[nextRoundIndex] ?? null);
+      resetRoundState();
+      return;
     }
 
     const unseenPeople = people.filter((candidate) => !usedPersonIds.includes(candidate.id));
@@ -118,13 +314,137 @@ function App() {
 
     setPerson(nextPerson);
     setUsedPersonIds((currentIds) => [...currentIds, nextPerson.id]);
-    setGuess('');
-    setSubmittedGuess('');
-    setResult(null);
-    setIsRevealLoading(false);
-    setIsPanelMinimized(false);
-    setRevealedHints(initialRevealedHints);
+    resetRoundState();
   };
+
+  const handleShareDailyScore = async () => {
+    if (!dailyEntry) {
+      return;
+    }
+
+    const shareText = createDailyShareText(dailyEntry, dailyDateKey, dailyPeople.length);
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Trace My Life Daily',
+          text: shareText,
+        });
+        setShareStatus('Shared.');
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareText);
+      setShareStatus('Copied share text.');
+    } catch {
+      setShareStatus('Share unavailable.');
+    }
+  };
+
+  if (people.length === 0) {
+    return (
+      <main className="app-shell empty-state">
+        <section className="panel">
+          <h1>No playable data found</h1>
+          <p>
+            Check <code>src/data/historicalPeople.json</code> for missing names, dates, places, or
+            coordinates.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
+  if (!mode) {
+    return (
+      <main className="app-shell empty-state">
+        <section className="panel mode-panel">
+          <h1>Trace My Life</h1>
+          <div className="mode-actions">
+            <button type="button" onClick={startPractice}>
+              Practice
+            </button>
+            <form className="daily-start-form" onSubmit={(event) => event.preventDefault()}>
+              <label htmlFor="daily-username">Username</label>
+              <input
+                id="daily-username"
+                type="text"
+                value={username}
+                onChange={(event) => {
+                  setUsername(event.target.value);
+                  setUsernameError(null);
+                }}
+                maxLength={24}
+                placeholder="Enter a username"
+                autoComplete="nickname"
+              />
+              {usernameError ? <p className="form-error">{usernameError}</p> : null}
+              <button type="button" onClick={startDaily}>
+                Daily
+              </button>
+            </form>
+          </div>
+          {malformedCount > 0 ? (
+            <p className="data-warning">
+              {malformedCount} malformed seed{' '}
+              {malformedCount === 1 ? 'record was' : 'records were'} skipped.
+            </p>
+          ) : null}
+        </section>
+      </main>
+    );
+  }
+
+  if (isDailyMode && isSessionComplete && dailyEntry) {
+    return (
+      <main className="app-shell empty-state">
+        <section className="panel daily-complete-panel">
+          <div className="panel-heading">
+            <p className="eyebrow">Daily Challenge {dailyDateKey}</p>
+            <h1>{dailyEntry.score} points</h1>
+          </div>
+          {dailyEndReason ? <p>{dailyEndReason}</p> : null}
+          <dl className="daily-score-breakdown">
+            <div>
+              <dt>Correct</dt>
+              <dd>{dailyEntry.correctGuesses}</dd>
+            </div>
+            <div>
+              <dt>Helpers saved</dt>
+              <dd>{dailyEntry.remainingHelperActions}</dd>
+            </div>
+          </dl>
+          <div className="daily-actions">
+            <button type="button" onClick={handleShareDailyScore}>
+              Share score
+            </button>
+            <button className="secondary-button" type="button" onClick={startDaily}>
+              Play Daily again
+            </button>
+            <button className="secondary-button" type="button" onClick={returnToModeSelect}>
+              Change mode
+            </button>
+          </div>
+          {shareStatus ? <p className="share-status">{shareStatus}</p> : null}
+          <section className="leaderboard-section" aria-label="Daily leaderboard">
+            <h2>Daily Leaderboard</h2>
+            {dailyLeaderboard.length > 0 ? (
+              <ol className="leaderboard-list">
+                {dailyLeaderboard.map((entry) => (
+                  <li key={entry.id} className={entry.id === dailyEntry.id ? 'current-entry' : ''}>
+                    <span>{entry.username}</span>
+                    <strong>{entry.score}</strong>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p>No scores yet.</p>
+            )}
+          </section>
+        </section>
+      </main>
+    );
+  }
 
   if (!person && isSessionComplete) {
     return (
@@ -135,6 +455,9 @@ function App() {
           <p>
             You have seen every person in this seed set. Refresh the page to start a new session.
           </p>
+          <button type="button" onClick={returnToModeSelect}>
+            Change mode
+          </button>
         </section>
       </main>
     );
@@ -160,8 +483,36 @@ function App() {
       <div className="grain" aria-hidden="true" />
       <div className={`ui-stack ${isPanelMinimized ? 'minimized' : ''}`}>
         <div className="utility-row">
-          <div className="score-panel" aria-label="Current score">
-            Score: {score}
+          <div
+            className={`score-panel ${isDailyMode ? 'daily-score-panel' : ''}`}
+            aria-label="Current score"
+          >
+            {isDailyMode ? (
+              <>
+                <span>
+                  Daily: {dailyCorrectGuesses} points • {dailyLives}{' '}
+                  {dailyLives === 1 ? 'life' : 'lives'}
+                </span>
+                <span className="daily-helper-icons" aria-label="Daily helpers">
+                  {dailyHelperIcons.map((helper) => (
+                    <span
+                      key={helper.hint}
+                      className={`daily-helper-icon ${
+                        dailyUnusedHints[helper.hint] ? '' : 'used'
+                      }`}
+                      title={helper.label}
+                      aria-label={`${helper.label}: ${
+                        dailyUnusedHints[helper.hint] ? 'available' : 'used'
+                      }`}
+                    >
+                      {helper.icon}
+                    </span>
+                  ))}
+                </span>
+              </>
+            ) : (
+              `Score: ${score}`
+            )}
           </div>
           {isPanelMinimized ? (
             <button
@@ -202,12 +553,14 @@ function App() {
                 hints={currentHints}
                 onNextRound={handleNextRound}
                 onMinimize={() => setIsPanelMinimized(true)}
+                nextRoundLabel={shouldDailyEndAfterResult ? 'View leaderboard' : 'Next round'}
               />
             ) : (
               <PersonInfo
                 person={person}
                 hints={currentHints}
                 revealedHints={revealedHints}
+                disabledHints={isDailyMode ? dailyBlockedHints : undefined}
                 onRevealHint={handleRevealHint}
                 onMinimize={() => setIsPanelMinimized(true)}
               />
@@ -221,6 +574,7 @@ function App() {
                 onSubmit={handleSubmit}
                 onSkip={handleSkip}
                 onNextRound={handleNextRound}
+                skipLabel={isDailyMode ? 'End run' : 'Skip'}
               />
             ) : null}
             {malformedCount > 0 ? (

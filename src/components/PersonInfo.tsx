@@ -5,6 +5,7 @@ interface PersonInfoProps {
   person: HistoricalPerson;
   hints: PersonHints;
   revealedHints: RevealedHints;
+  disabledHints?: RevealedHints;
   onRevealHint: (hint: HintKey) => void;
   onMinimize: () => void;
 }
@@ -21,6 +22,7 @@ export function PersonInfo({
   person,
   hints,
   revealedHints,
+  disabledHints,
   onRevealHint,
   onMinimize,
 }: PersonInfoProps) {
@@ -64,19 +66,27 @@ export function PersonInfo({
             <div className="hint-list" aria-label="Hints">
               {hintKeys.map((hintKey) => {
                 const isRevealed = revealedHints[hintKey];
+                const isDisabled = isRevealed || Boolean(disabledHints?.[hintKey]);
 
                 return (
                   <button
-                    className={`hint-button ${isRevealed ? 'revealed' : ''}`}
+                    className={`hint-button ${isRevealed ? 'revealed' : ''} ${
+                      disabledHints?.[hintKey] ? 'blocked' : ''
+                    }`}
                     type="button"
                     key={hintKey}
                     onClick={() => onRevealHint(hintKey)}
-                    disabled={isRevealed}
+                    disabled={isDisabled}
                   >
                     {isRevealed ? (
                       <>
                         <span>{hintLabels[hintKey]}</span>
                         <strong>{hints[hintKey]}</strong>
+                      </>
+                    ) : disabledHints?.[hintKey] ? (
+                      <>
+                        <span>{hintLabels[hintKey]}</span>
+                        <strong>Used</strong>
                       </>
                     ) : (
                       <span>{hintLabels[hintKey]}</span>

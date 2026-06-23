@@ -10,6 +10,7 @@ interface ResultPanelProps {
   hints: PersonHints;
   onNextRound: () => void;
   onMinimize: () => void;
+  nextRoundLabel?: string;
 }
 
 interface WikipediaSummary {
@@ -40,6 +41,7 @@ export function ResultPanel({
   hints,
   onNextRound,
   onMinimize,
+  nextRoundLabel = 'Next round',
 }: ResultPanelProps) {
   const panelRef = useRef<HTMLElement | null>(null);
   const [summary, setSummary] = useState<PersonSummary | null>(null);
@@ -181,10 +183,12 @@ export function ResultPanel({
                 </a>
               </div>
             ) : null}
-            <button className="secondary-button" type="button" onClick={onNextRound}>
-              Next round
-            </button>
           </>
+        ) : null}
+        {!isLoadingSummary ? (
+          <button className="secondary-button" type="button" onClick={onNextRound}>
+            {nextRoundLabel}
+          </button>
         ) : null}
       </div>
     </aside>

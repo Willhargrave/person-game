@@ -27,3 +27,14 @@ export interface PersonHints {
 }
 
 export type RevealedHints = Record<HintKey, boolean>;
+
+export type GameMode = 'practice' | 'daily';
+
+export interface DailyLeaderboardEntry {
+  id: string;
+  username: string;
+  score: number;
+  correctGuesses: number;
+  remainingHelperActions: number;
+  completedAt: string;
+}
