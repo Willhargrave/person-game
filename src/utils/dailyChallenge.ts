@@ -53,8 +53,7 @@ export const getDailyScore = (correctGuesses: number, remainingHelperActions: nu
 
 export const getRemainingDailyHelperActions = (
   unusedHints: Record<HintKey, boolean>,
-  extraLives: number,
-): number => Object.values(unusedHints).filter(Boolean).length + extraLives;
+): number => Object.values(unusedHints).filter(Boolean).length;
 
 export interface DailyMissOutcome {
   remainingLives: number;

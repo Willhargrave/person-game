@@ -10,5 +10,11 @@
     "rootDir": "src",
     "outDir": ".tmp-tests"
   },
-  "include": ["src/types.ts", "src/utils/dailyChallenge.ts", "src/utils/dailyChallenge.test.ts"]
+  "include": [
+    "src/types.ts",
+    "src/utils/dailyChallenge.ts",
+    "src/utils/dailyChallenge.test.ts",
+    "src/utils/dailyRules.ts",
+    "src/utils/dailyRules.test.ts"
+  ]
 }

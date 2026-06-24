@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import { GameMap } from './components/GameMap';
+import { DailyRulesCard } from './components/DailyRulesCard';
 import { GuessPanel } from './components/GuessPanel';
 import { PersonInfo } from './components/PersonInfo';
 import { ResultPanel } from './components/ResultPanel';
@@ -24,6 +26,7 @@ import {
   readDailyLeaderboard,
   saveDailyLeaderboardEntry,
 } from './utils/dailyChallenge';
+import { dailyRulesItems, dailyRulesTitle } from './utils/dailyRules';
 import { getValidPeople, isCorrectGuess, pickRandomPerson } from './utils/people';
 
 const initialRevealedHints: RevealedHints = {
@@ -70,13 +73,19 @@ const getEntryId = () => {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
 
+interface DailyFinalStats {
+  score: number;
+  correctGuesses: number;
+  remainingHelperActions: number;
+  completedAt: string;
+}
+
 function App() {
   const people = useMemo(() => getValidPeople(peopleData), []);
   const dailyDateKey = useMemo(() => getDailyDateKey(), []);
   const dailyPeople = useMemo(() => getDailyPeople(people, dailyDateKey), [dailyDateKey, people]);
   const [mode, setMode] = useState<GameMode | null>(null);
   const [username, setUsername] = useState('');
-  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [person, setPerson] = useState<HistoricalPerson | null>(null);
   const [usedPersonIds, setUsedPersonIds] = useState<string[]>([]);
   const [dailyRoundIndex, setDailyRoundIndex] = useState(0);
@@ -91,7 +100,9 @@ function App() {
   const [isDailyGameOver, setIsDailyGameOver] = useState(false);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<DailyLeaderboardEntry[]>([]);
   const [dailyEntry, setDailyEntry] = useState<DailyLeaderboardEntry | null>(null);
+  const [dailyFinalStats, setDailyFinalStats] = useState<DailyFinalStats | null>(null);
   const [dailyEndReason, setDailyEndReason] = useState<string | null>(null);
+  const [isDailyRulesOpen, setIsDailyRulesOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [revealedHints, setRevealedHints] = useState<RevealedHints>(initialRevealedHints);
   const [isRevealLoading, setIsRevealLoading] = useState(false);
@@ -152,22 +163,16 @@ function App() {
     setIsSessionComplete(false);
     setScore(0);
     setDailyEntry(null);
+    setDailyFinalStats(null);
     setDailyEndReason(null);
+    setIsDailyRulesOpen(false);
     setShareStatus(null);
     resetRoundState();
   };
 
   const startDaily = () => {
-    const trimmedUsername = username.trim();
-
-    if (!trimmedUsername) {
-      setUsernameError('Enter a username to play Daily.');
-      return;
-    }
-
     clearRevealTimer();
-    setUsername(trimmedUsername);
-    setUsernameError(null);
+    setUsername('');
     setMode('daily');
     setPerson(dailyPeople[0] ?? null);
     setUsedPersonIds([]);
@@ -177,7 +182,9 @@ function App() {
     setDailyUnusedHints({ ...initialDailyUnusedHints });
     setIsDailyGameOver(false);
     setDailyEntry(null);
+    setDailyFinalStats(null);
     setDailyEndReason(null);
+    setIsDailyRulesOpen(true);
     setShareStatus(null);
     setIsSessionComplete(false);
     loadLeaderboard();
@@ -190,8 +197,10 @@ function App() {
     setPerson(null);
     setIsSessionComplete(false);
     setDailyEntry(null);
+    setDailyFinalStats(null);
     setDailyEndReason(null);
     setIsDailyGameOver(false);
+    setIsDailyRulesOpen(false);
     setShareStatus(null);
     resetRoundState();
   };
@@ -208,25 +217,44 @@ function App() {
   };
 
   const finishDaily = (reason: string) => {
-    const remainingHelperActions = getRemainingDailyHelperActions(dailyUnusedHints, dailyLives);
-    const entry: DailyLeaderboardEntry = {
-      id: getEntryId(),
-      username: username.trim(),
+    const remainingHelperActions = getRemainingDailyHelperActions(dailyUnusedHints);
+    setDailyFinalStats({
       score: getDailyScore(dailyCorrectGuesses, remainingHelperActions),
       correctGuesses: dailyCorrectGuesses,
       remainingHelperActions,
       completedAt: new Date().toISOString(),
-    };
-
-    const nextLeaderboard = saveDailyLeaderboardEntry(window.localStorage, dailyDateKey, entry);
-    setDailyEntry(entry);
-    setDailyLeaderboard(nextLeaderboard);
+    });
+    setDailyEntry(null);
+    setShareStatus(null);
     setDailyEndReason(reason);
+    setIsDailyRulesOpen(false);
     setIsSessionComplete(true);
     setPerson(null);
     setResult(null);
     setIsRevealLoading(false);
     setIsPanelMinimized(false);
+  };
+
+  const handleSaveDailyScore = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!dailyFinalStats) {
+      return;
+    }
+
+    const entry: DailyLeaderboardEntry = {
+      id: getEntryId(),
+      username: username.trim() || 'anonymous',
+      score: dailyFinalStats.score,
+      correctGuesses: dailyFinalStats.correctGuesses,
+      remainingHelperActions: dailyFinalStats.remainingHelperActions,
+      completedAt: dailyFinalStats.completedAt,
+    };
+
+    const nextLeaderboard = saveDailyLeaderboardEntry(window.localStorage, dailyDateKey, entry);
+    setDailyEntry(entry);
+    setDailyLeaderboard(nextLeaderboard);
+    setUsername(entry.username);
   };
 
   const handleRevealHint = (hint: HintKey) => {
@@ -358,31 +386,18 @@ function App() {
   if (!mode) {
     return (
       <main className="app-shell empty-state">
-        <section className="panel mode-panel">
+        <div className="mode-intro">
           <h1>Trace My Life</h1>
+          <p>Uncover famous people based on their birth and death</p>
+        </div>
+        <section className="panel mode-panel">
           <div className="mode-actions">
+            <button type="button" onClick={startDaily}>
+              Daily
+            </button>
             <button type="button" onClick={startPractice}>
               Practice
             </button>
-            <form className="daily-start-form" onSubmit={(event) => event.preventDefault()}>
-              <label htmlFor="daily-username">Username</label>
-              <input
-                id="daily-username"
-                type="text"
-                value={username}
-                onChange={(event) => {
-                  setUsername(event.target.value);
-                  setUsernameError(null);
-                }}
-                maxLength={24}
-                placeholder="Enter a username"
-                autoComplete="nickname"
-              />
-              {usernameError ? <p className="form-error">{usernameError}</p> : null}
-              <button type="button" onClick={startDaily}>
-                Daily
-              </button>
-            </form>
           </div>
           {malformedCount > 0 ? (
             <p className="data-warning">
@@ -395,52 +410,73 @@ function App() {
     );
   }
 
-  if (isDailyMode && isSessionComplete && dailyEntry) {
+  if (isDailyMode && isSessionComplete && dailyFinalStats) {
     return (
       <main className="app-shell empty-state">
         <section className="panel daily-complete-panel">
           <div className="panel-heading">
             <p className="eyebrow">Daily Challenge {dailyDateKey}</p>
-            <h1>{dailyEntry.score} points</h1>
+            <h1>{dailyFinalStats.score} points</h1>
           </div>
           {dailyEndReason ? <p>{dailyEndReason}</p> : null}
           <dl className="daily-score-breakdown">
             <div>
               <dt>Correct</dt>
-              <dd>{dailyEntry.correctGuesses}</dd>
+              <dd>{dailyFinalStats.correctGuesses}</dd>
             </div>
             <div>
               <dt>Helpers saved</dt>
-              <dd>{dailyEntry.remainingHelperActions}</dd>
+              <dd>{dailyFinalStats.remainingHelperActions}</dd>
             </div>
           </dl>
-          <div className="daily-actions">
-            <button type="button" onClick={handleShareDailyScore}>
-              Share score
-            </button>
-            <button className="secondary-button" type="button" onClick={startDaily}>
-              Play Daily again
-            </button>
-            <button className="secondary-button" type="button" onClick={returnToModeSelect}>
-              Change mode
-            </button>
-          </div>
-          {shareStatus ? <p className="share-status">{shareStatus}</p> : null}
-          <section className="leaderboard-section" aria-label="Daily leaderboard">
-            <h2>Daily Leaderboard</h2>
-            {dailyLeaderboard.length > 0 ? (
-              <ol className="leaderboard-list">
-                {dailyLeaderboard.map((entry) => (
-                  <li key={entry.id} className={entry.id === dailyEntry.id ? 'current-entry' : ''}>
-                    <span>{entry.username}</span>
-                    <strong>{entry.score}</strong>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p>No scores yet.</p>
-            )}
-          </section>
+          {!dailyEntry ? (
+            <form className="username-form" onSubmit={handleSaveDailyScore}>
+              <label htmlFor="daily-username">Username</label>
+              <input
+                id="daily-username"
+                type="text"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                maxLength={24}
+                placeholder="Leave blank for anonymous"
+                autoComplete="nickname"
+              />
+              <button type="submit">Add score</button>
+            </form>
+          ) : (
+            <>
+              <div className="daily-actions">
+                <button type="button" onClick={handleShareDailyScore}>
+                  Share score
+                </button>
+                <button className="secondary-button" type="button" onClick={startDaily}>
+                  Play Daily again
+                </button>
+                <button className="secondary-button" type="button" onClick={returnToModeSelect}>
+                  Change mode
+                </button>
+              </div>
+              {shareStatus ? <p className="share-status">{shareStatus}</p> : null}
+              <section className="leaderboard-section" aria-label="Daily leaderboard">
+                <h2>Daily Leaderboard</h2>
+                {dailyLeaderboard.length > 0 ? (
+                  <ol className="leaderboard-list">
+                    {dailyLeaderboard.map((entry) => (
+                      <li
+                        key={entry.id}
+                        className={entry.id === dailyEntry.id ? 'current-entry' : ''}
+                      >
+                        <span>{entry.username}</span>
+                        <strong>{entry.score}</strong>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p>No scores yet.</p>
+                )}
+              </section>
+            </>
+          )}
         </section>
       </main>
     );
@@ -481,6 +517,13 @@ function App() {
     <main className="app-shell">
       <GameMap person={person} />
       <div className="grain" aria-hidden="true" />
+      {isDailyMode && isDailyRulesOpen ? (
+        <DailyRulesCard
+          title={dailyRulesTitle}
+          items={dailyRulesItems}
+          onDismiss={() => setIsDailyRulesOpen(false)}
+        />
+      ) : null}
       <div className={`ui-stack ${isPanelMinimized ? 'minimized' : ''}`}>
         <div className="utility-row">
           <div
@@ -572,9 +615,8 @@ function App() {
                 people={people}
                 onGuessChange={setGuess}
                 onSubmit={handleSubmit}
-                onSkip={handleSkip}
+                onSkip={isDailyMode ? undefined : handleSkip}
                 onNextRound={handleNextRound}
-                skipLabel={isDailyMode ? 'End run' : 'Skip'}
               />
             ) : null}
             {malformedCount > 0 ? (

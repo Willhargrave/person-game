@@ -85,8 +85,8 @@ describe('daily challenge utilities', () => {
       profession: true,
     };
 
-    assert.equal(getRemainingDailyHelperActions(unusedHints, 1), 3);
-    assert.equal(getDailyScore(4, 3), 10);
+    assert.equal(getRemainingDailyHelperActions(unusedHints), 2);
+    assert.equal(getDailyScore(4, 2), 8);
   });
 
   it('uses a life before ending the daily run', () => {
