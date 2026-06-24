@@ -2,9 +2,11 @@ import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'reac
 import L, { type LatLngBoundsExpression } from 'leaflet';
 import { useEffect, useMemo } from 'react';
 import type { HistoricalPerson } from '../types';
+import type { RoundIntroStage } from '../utils/roundIntro';
 
 interface GameMapProps {
   person: HistoricalPerson;
+  introStage?: RoundIntroStage;
 }
 
 const worldBounds: LatLngBoundsExpression = [
@@ -26,24 +28,41 @@ const deathIcon = L.divIcon({
   iconAnchor: [17, 17],
 });
 
-function MapFocus({ person }: GameMapProps) {
+function MapFocus({ person, introStage = 'ready' }: GameMapProps) {
   const map = useMap();
 
   useEffect(() => {
+    const birthLocation = L.latLng(person.birthCoordinates.lat, person.birthCoordinates.lng);
+    const deathLocation = L.latLng(person.deathCoordinates.lat, person.deathCoordinates.lng);
     const bounds = L.latLngBounds([
-      [person.birthCoordinates.lat, person.birthCoordinates.lng],
-      [person.deathCoordinates.lat, person.deathCoordinates.lng],
+      birthLocation,
+      deathLocation,
     ]);
+
+    if (introStage === 'birth') {
+      map.flyTo(birthLocation, 5, { animate: true, duration: 1 });
+      return;
+    }
+
+    if (introStage === 'route') {
+      map.flyTo(deathLocation, 5, { animate: true, duration: 2 });
+      return;
+    }
+
+    if (introStage === 'death') {
+      map.flyTo(deathLocation, 5, { animate: true, duration: 0.6 });
+      return;
+    }
 
     if (bounds.isValid()) {
       map.fitBounds(bounds.pad(0.9), { animate: true, maxZoom: 4 });
     }
-  }, [map, person]);
+  }, [introStage, map, person]);
 
   return null;
 }
 
-export function GameMap({ person }: GameMapProps) {
+export function GameMap({ person, introStage = 'ready' }: GameMapProps) {
   const route = useMemo(
     () => [
       [person.birthCoordinates.lat, person.birthCoordinates.lng] as [number, number],
@@ -51,6 +70,8 @@ export function GameMap({ person }: GameMapProps) {
     ],
     [person],
   );
+  const showRoute = introStage === 'route' || introStage === 'death' || introStage === 'ready';
+  const showDeath = introStage === 'death' || introStage === 'ready';
 
   return (
     <MapContainer
@@ -71,27 +92,48 @@ export function GameMap({ person }: GameMapProps) {
         noWrap
         bounds={worldBounds}
       />
-      <Polyline
-        positions={route}
-        pathOptions={{
-          color: '#4b4030',
-          weight: 2,
-          opacity: 0.55,
-          dashArray: '6 8',
-          lineCap: 'round',
-        }}
-      />
+      {showRoute ? (
+        <Polyline
+          className={`intro-route ${introStage === 'route' ? 'drawing' : ''}`}
+          positions={route}
+          pathOptions={{
+            color: '#4b4030',
+            weight: 2,
+            opacity: 0.55,
+            dashArray: '6 8',
+            lineCap: 'round',
+          }}
+        />
+      ) : null}
       <Marker position={route[0]} icon={birthIcon}>
-        <Tooltip direction="top" offset={[0, -12]} opacity={1}>
-          Birthplace
+        <Tooltip
+          direction="top"
+          offset={[0, -12]}
+          opacity={1}
+          permanent={introStage === 'birth'}
+          className={introStage === 'birth' ? 'round-location-tooltip' : undefined}
+        >
+          {introStage === 'birth'
+            ? `Born in ${person.birthPlace} on ${person.birthDate}`
+            : 'Birthplace'}
         </Tooltip>
       </Marker>
-      <Marker position={route[1]} icon={deathIcon}>
-        <Tooltip direction="top" offset={[0, -12]} opacity={1}>
-          Death place
-        </Tooltip>
-      </Marker>
-      <MapFocus person={person} />
+      {showDeath ? (
+        <Marker position={route[1]} icon={deathIcon}>
+          <Tooltip
+            direction="top"
+            offset={[0, -12]}
+            opacity={1}
+            permanent={introStage === 'death'}
+            className={introStage === 'death' ? 'round-location-tooltip' : undefined}
+          >
+            {introStage === 'death'
+              ? `Died in ${person.deathPlace} on ${person.deathDate}`
+              : 'Death place'}
+          </Tooltip>
+        </Marker>
+      ) : null}
+      <MapFocus person={person} introStage={introStage} />
     </MapContainer>
   );
 }

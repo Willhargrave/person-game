@@ -89,13 +89,13 @@ describe('daily challenge utilities', () => {
     assert.equal(getDailyScore(4, 2), 8);
   });
 
-  it('uses a life before ending the daily run', () => {
+  it('uses a chance before ending the daily run', () => {
     assert.deepEqual(getDailyMissOutcome(1), {
-      remainingLives: 0,
+      remainingChances: 0,
       isGameOver: false,
     });
     assert.deepEqual(getDailyMissOutcome(0), {
-      remainingLives: 0,
+      remainingChances: 0,
       isGameOver: true,
     });
   });
@@ -122,7 +122,23 @@ describe('daily challenge utilities', () => {
     const entry = makeEntry('player', 7, '2026-06-23T10:00:00.000Z');
     const leaderboard = saveDailyLeaderboardEntry(storage, '2026-06-23', entry);
 
+    const shareText = createDailyShareText(
+      entry,
+      '2026-06-23',
+      'https://person-game-iota.vercel.app/',
+    );
+
     assert.equal(leaderboard[0]?.id, 'player');
-    assert.match(createDailyShareText(entry, '2026-06-23', 20), /Score: 7/);
+    assert.equal(
+      shareText,
+      [
+        'Trace My Life Daily 2026-06-23',
+        'Score: 7',
+        'Correct People: 7',
+        'https://person-game-iota.vercel.app/',
+      ].join('\n'),
+    );
+    assert.doesNotMatch(shareText, /Helpers saved/);
+    assert.doesNotMatch(shareText, /Correct: 7\/20/);
   });
 });

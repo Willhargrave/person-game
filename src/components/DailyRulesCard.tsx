@@ -35,6 +35,17 @@ export function DailyRulesCard({ title, items, onDismiss }: DailyRulesCardProps)
                   ))}
                 </span>
               ) : null}
+              {item.chanceIcon ? (
+                <span className="daily-rules-icons" aria-label="Daily chance">
+                  <span
+                    className="daily-chance-icon"
+                    title={item.chanceIcon.label}
+                    aria-label={item.chanceIcon.label}
+                  >
+                    {item.chanceIcon.icon}
+                  </span>
+                </span>
+              ) : null}
             </li>
           ))}
         </ul>

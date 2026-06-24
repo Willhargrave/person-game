@@ -17,7 +17,7 @@ import type {
 } from './types';
 import {
   createDailyShareText,
-  dailyInitialLives,
+  dailyInitialChances,
   getDailyDateKey,
   getDailyMissOutcome,
   getDailyPeople,
@@ -28,6 +28,11 @@ import {
 } from './utils/dailyChallenge';
 import { dailyRulesItems, dailyRulesTitle } from './utils/dailyRules';
 import { getValidPeople, isCorrectGuess, pickRandomPerson } from './utils/people';
+import {
+  isRoundIntroReady,
+  roundIntroSteps,
+  type RoundIntroStage,
+} from './utils/roundIntro';
 
 const initialRevealedHints: RevealedHints = {
   methodOfDeath: false,
@@ -46,6 +51,17 @@ const dailyHelperIcons: Array<{ hint: HintKey; icon: string; label: string }> = 
   { hint: 'gender', icon: '⚧', label: 'Gender helper' },
   { hint: 'profession', icon: '⚒', label: 'Profession helper' },
 ];
+
+const dailyChanceIcon = '◆';
+const fallbackShareUrl = 'https://person-game-iota.vercel.app/';
+
+const getShareUrl = () => {
+  if (window.location.origin) {
+    return `${window.location.origin}/`;
+  }
+
+  return fallbackShareUrl;
+};
 
 const getPointsForHintCount = (hintCount: number) => {
   if (hintCount === 0) {
@@ -95,7 +111,7 @@ function App() {
   const [isSessionComplete, setIsSessionComplete] = useState(false);
   const [score, setScore] = useState(0);
   const [dailyCorrectGuesses, setDailyCorrectGuesses] = useState(0);
-  const [dailyLives, setDailyLives] = useState(dailyInitialLives);
+  const [dailyChances, setDailyChances] = useState(dailyInitialChances);
   const [dailyUnusedHints, setDailyUnusedHints] = useState<RevealedHints>(initialDailyUnusedHints);
   const [isDailyGameOver, setIsDailyGameOver] = useState(false);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<DailyLeaderboardEntry[]>([]);
@@ -107,7 +123,9 @@ function App() {
   const [revealedHints, setRevealedHints] = useState<RevealedHints>(initialRevealedHints);
   const [isRevealLoading, setIsRevealLoading] = useState(false);
   const [isPanelMinimized, setIsPanelMinimized] = useState(false);
+  const [roundIntroStage, setRoundIntroStage] = useState<RoundIntroStage>('ready');
   const revealTimerRef = useRef<number | null>(null);
+  const roundIntroTimerRef = useRef<number | null>(null);
 
   const malformedCount = Array.isArray(peopleData) ? peopleData.length - people.length : 0;
   const currentHints = person ? (personHints[person.id] ?? fallbackHints) : fallbackHints;
@@ -123,15 +141,59 @@ function App() {
     gender: !dailyUnusedHints.gender,
     profession: !dailyUnusedHints.profession,
   };
+  const isRoundReady = isRoundIntroReady(roundIntroStage);
 
   useEffect(
     () => () => {
       if (revealTimerRef.current) {
         window.clearTimeout(revealTimerRef.current);
       }
+
+      if (roundIntroTimerRef.current) {
+        window.clearTimeout(roundIntroTimerRef.current);
+      }
     },
     [],
   );
+
+  useEffect(() => {
+    if (!person || result || isSessionComplete || isDailyRulesOpen) {
+      return;
+    }
+
+    let stepIndex = 0;
+    let isCancelled = false;
+
+    const runStep = () => {
+      const step = roundIntroSteps[stepIndex];
+
+      if (!step || isCancelled) {
+        return;
+      }
+
+      setRoundIntroStage(step.stage);
+
+      if (step.stage === 'ready') {
+        roundIntroTimerRef.current = null;
+        return;
+      }
+
+      roundIntroTimerRef.current = window.setTimeout(() => {
+        stepIndex += 1;
+        runStep();
+      }, step.delayMs);
+    };
+
+    runStep();
+
+    return () => {
+      isCancelled = true;
+      if (roundIntroTimerRef.current) {
+        window.clearTimeout(roundIntroTimerRef.current);
+        roundIntroTimerRef.current = null;
+      }
+    };
+  }, [isDailyRulesOpen, isSessionComplete, person, result]);
 
   const clearRevealTimer = () => {
     if (revealTimerRef.current) {
@@ -147,6 +209,7 @@ function App() {
     setIsRevealLoading(false);
     setIsPanelMinimized(false);
     setRevealedHints({ ...initialRevealedHints });
+    setRoundIntroStage('birth');
   };
 
   const loadLeaderboard = () => {
@@ -178,7 +241,7 @@ function App() {
     setUsedPersonIds([]);
     setDailyRoundIndex(0);
     setDailyCorrectGuesses(0);
-    setDailyLives(dailyInitialLives);
+    setDailyChances(dailyInitialChances);
     setDailyUnusedHints({ ...initialDailyUnusedHints });
     setIsDailyGameOver(false);
     setDailyEntry(null);
@@ -288,8 +351,8 @@ function App() {
       if (nextResult === 'correct') {
         setDailyCorrectGuesses((currentScore) => currentScore + 1);
       } else {
-        const missOutcome = getDailyMissOutcome(dailyLives);
-        setDailyLives(missOutcome.remainingLives);
+        const missOutcome = getDailyMissOutcome(dailyChances);
+        setDailyChances(missOutcome.remainingChances);
         setIsDailyGameOver(missOutcome.isGameOver);
       }
 
@@ -305,7 +368,7 @@ function App() {
     revealResult('incorrect', '__SKIPPED__');
 
     if (isDailyMode) {
-      setDailyLives(0);
+      setDailyChances(0);
       setIsDailyGameOver(true);
     }
   };
@@ -315,7 +378,7 @@ function App() {
 
     if (isDailyMode) {
       if (isDailyGameOver) {
-        finishDaily('You ran out of lives.');
+        finishDaily('You ran out of chances.');
         return;
       }
 
@@ -350,18 +413,9 @@ function App() {
       return;
     }
 
-    const shareText = createDailyShareText(dailyEntry, dailyDateKey, dailyPeople.length);
+    const shareText = createDailyShareText(dailyEntry, dailyDateKey, getShareUrl());
 
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'Trace My Life Daily',
-          text: shareText,
-        });
-        setShareStatus('Shared.');
-        return;
-      }
-
       await navigator.clipboard.writeText(shareText);
       setShareStatus('Copied share text.');
     } catch {
@@ -425,8 +479,12 @@ function App() {
               <dd>{dailyFinalStats.correctGuesses}</dd>
             </div>
             <div>
-              <dt>Helpers saved</dt>
-              <dd>{dailyFinalStats.remainingHelperActions}</dd>
+              <dt>Helper bonus</dt>
+              <dd>{dailyFinalStats.remainingHelperActions * 2}</dd>
+            </div>
+            <div className="daily-score-total">
+              <dt>Total</dt>
+              <dd>{dailyFinalStats.score}</dd>
             </div>
           </dl>
           {!dailyEntry ? (
@@ -515,7 +573,7 @@ function App() {
 
   return (
     <main className="app-shell">
-      <GameMap person={person} />
+      <GameMap person={person} introStage={roundIntroStage} />
       <div className="grain" aria-hidden="true" />
       {isDailyMode && isDailyRulesOpen ? (
         <DailyRulesCard
@@ -531,10 +589,15 @@ function App() {
             aria-label="Current score"
           >
             {isDailyMode ? (
-              <>
-                <span>
-                  Daily: {dailyCorrectGuesses} points • {dailyLives}{' '}
-                  {dailyLives === 1 ? 'life' : 'lives'}
+              <span className="daily-status-icons">
+                <span className="daily-chance-icons" aria-label="Daily chances">
+                  <span
+                    className={`daily-chance-icon ${dailyChances > 0 ? '' : 'used'}`}
+                    title={dailyChances > 0 ? 'Chance available' : 'Chance used'}
+                    aria-label={dailyChances > 0 ? 'Chance available' : 'Chance used'}
+                  >
+                    {dailyChanceIcon}
+                  </span>
                 </span>
                 <span className="daily-helper-icons" aria-label="Daily helpers">
                   {dailyHelperIcons.map((helper) => (
@@ -552,7 +615,7 @@ function App() {
                     </span>
                   ))}
                 </span>
-              </>
+              </span>
             ) : (
               `Score: ${score}`
             )}
@@ -598,7 +661,7 @@ function App() {
                 onMinimize={() => setIsPanelMinimized(true)}
                 nextRoundLabel={shouldDailyEndAfterResult ? 'View leaderboard' : 'Next round'}
               />
-            ) : (
+            ) : !isRoundReady ? null : (
               <PersonInfo
                 person={person}
                 hints={currentHints}
@@ -608,7 +671,7 @@ function App() {
                 onMinimize={() => setIsPanelMinimized(true)}
               />
             )}
-            {!result && !isRevealLoading ? (
+            {!result && !isRevealLoading && isRoundReady ? (
               <GuessPanel
                 guess={guess}
                 result={result}

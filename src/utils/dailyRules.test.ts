@@ -11,8 +11,8 @@ describe('daily rules copy', () => {
         'Guess the famous figure from their birth and death locations.',
         'Reveal gender, cause of death, or profession if you need help.',
         'Each reveal can only be used once per Daily game.',
-        'You start with one extra life.',
-        'After that life is lost, one more wrong guess ends the game.',
+        'You start with one extra chance.',
+        'After that chance is used, one more wrong guess ends the game.',
         'Each unused reveal is worth 2 bonus points at the end.',
       ],
     );
@@ -24,5 +24,10 @@ describe('daily rules copy', () => {
       { icon: '⚧', label: 'Gender reveal' },
       { icon: '⚒', label: 'Profession reveal' },
     ]);
+  });
+
+  it('includes the chance icon for chance rules', () => {
+    assert.deepEqual(dailyRulesItems[3]?.chanceIcon, { icon: '◆', label: 'Chance' });
+    assert.deepEqual(dailyRulesItems[4]?.chanceIcon, { icon: '◆', label: 'Chance' });
   });
 });

@@ -161,7 +161,7 @@ export function ResultPanel({
               </dd>
               <dd className="timeline-cause">{hints.methodOfDeath}</dd>
             </div>
-            <div className="life-arrow" aria-hidden="true">
+            <div className="timeline-arrow" aria-hidden="true">
               <span />
             </div>
           </dl>

@@ -6,6 +6,10 @@ export interface DailyRulesItem {
     icon: string;
     label: string;
   }>;
+  chanceIcon?: {
+    icon: string;
+    label: string;
+  };
 }
 
 export const dailyRulesItems: DailyRulesItem[] = [
@@ -24,10 +28,12 @@ export const dailyRulesItems: DailyRulesItem[] = [
     text: 'Each reveal can only be used once per Daily game.',
   },
   {
-    text: 'You start with one extra life.',
+    text: 'You start with one extra chance.',
+    chanceIcon: { icon: '◆', label: 'Chance' },
   },
   {
-    text: 'After that life is lost, one more wrong guess ends the game.',
+    text: 'After that chance is used, one more wrong guess ends the game.',
+    chanceIcon: { icon: '◆', label: 'Chance' },
   },
   {
     text: 'Each unused reveal is worth 2 bonus points at the end.',

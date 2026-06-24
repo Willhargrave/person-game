@@ -179,7 +179,8 @@ input {
   vertical-align: middle;
 }
 
-.daily-rules-icons .daily-helper-icon {
+.daily-rules-icons .daily-helper-icon,
+.daily-rules-icons .daily-chance-icon {
   width: 24px;
   height: 24px;
   font-size: 0.9rem;
@@ -204,16 +205,28 @@ input {
 
 .daily-score-panel {
   width: 100%;
-  justify-content: space-between;
+  justify-content: center;
   gap: 10px;
   padding: 10px 12px;
+}
+
+.daily-status-icons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .daily-helper-icons {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
+}
+
+.daily-chance-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .daily-helper-icon {
@@ -229,7 +242,21 @@ input {
   line-height: 1;
 }
 
-.daily-helper-icon.used {
+.daily-chance-icon {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid rgba(52, 45, 34, 0.38);
+  border-radius: 50%;
+  background: rgba(255, 252, 241, 0.78);
+  color: #30291f;
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.daily-helper-icon.used,
+.daily-chance-icon.used {
   background: rgba(220, 213, 197, 0.72);
   color: #8a7f6d;
   filter: grayscale(1);
@@ -640,13 +667,13 @@ button:disabled {
   font-style: italic;
 }
 
-.life-arrow {
+.timeline-arrow {
   grid-column: 1 / -1;
   display: block;
   padding: 5px 8px 0;
 }
 
-.life-arrow span {
+.timeline-arrow span {
   position: relative;
   display: block;
   height: 0;
@@ -655,7 +682,7 @@ button:disabled {
   border-top: 2px dashed rgba(52, 45, 34, 0.72);
 }
 
-.life-arrow span::before {
+.timeline-arrow span::before {
   content: "👶";
   position: absolute;
   left: -10px;
@@ -666,7 +693,7 @@ button:disabled {
   transform: translateY(-50%);
 }
 
-.life-arrow span::after {
+.timeline-arrow span::after {
   content: "💀";
   position: absolute;
   right: -10px;
@@ -839,6 +866,11 @@ button:disabled {
   padding: 10px;
 }
 
+.daily-score-breakdown .daily-score-total {
+  grid-column: 1 / -1;
+  background: rgba(232, 240, 208, 0.86);
+}
+
 .daily-score-breakdown dd {
   color: #30291f;
   font-family: ui-sans-serif, system-ui, sans-serif;
@@ -902,6 +934,18 @@ button:disabled {
   text-shadow: 0 1px 2px rgba(43, 36, 27, 0.35);
 }
 
+.intro-route.drawing {
+  stroke-dasharray: 6 8;
+  stroke-dashoffset: 90;
+  animation: drawRoute 2s ease-out forwards;
+}
+
+@keyframes drawRoute {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 .leaflet-tooltip {
   border: 1px solid #3a3125;
   border-radius: 5px;
@@ -910,6 +954,13 @@ button:disabled {
   font-family: ui-sans-serif, system-ui, sans-serif;
   font-weight: 800;
   box-shadow: 1px 2px 0 rgba(52, 45, 34, 0.18);
+}
+
+.round-location-tooltip {
+  max-width: min(260px, calc(100vw - 40px));
+  padding: 7px 9px;
+  text-align: center;
+  white-space: normal;
 }
 
 @media (max-width: 720px) {

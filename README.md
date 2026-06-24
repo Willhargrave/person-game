@@ -1,6 +1,6 @@
 # Sketch Atlas Guess
 
-A React + TypeScript browser game prototype where the player sees a sketch-style world map and two hidden-life clues: birthplace and death place. The dates and place names are shown, but the person's name is hidden until the player submits a guess.
+A React + TypeScript browser game prototype where the player sees a sketch-style world map and two location clues: birthplace and death place. The dates and place names are shown, but the person's name is hidden until the player submits a guess.
 
 ## Run
 
@@ -27,7 +27,7 @@ The player enters a name, submits it, and the game compares the guess case-insen
 
 ## Data Structure
 
-Seed data lives in `src/data/historicalPeople.json` and follows this TypeScript shape:
+Seed data is in `src/data/historicalPeople.json` and follows this TypeScript shape:
 
 ```ts
 interface Coordinates {

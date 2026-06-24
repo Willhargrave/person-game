@@ -1,7 +1,7 @@
 import type { DailyLeaderboardEntry, HistoricalPerson, HintKey } from '../types.js';
 
 export const dailyHelperBonusPoints = 2;
-export const dailyInitialLives = 1;
+export const dailyInitialChances = 1;
 
 const leaderboardKeyPrefix = 'trace-my-life-daily-leaderboard';
 
@@ -56,20 +56,20 @@ export const getRemainingDailyHelperActions = (
 ): number => Object.values(unusedHints).filter(Boolean).length;
 
 export interface DailyMissOutcome {
-  remainingLives: number;
+  remainingChances: number;
   isGameOver: boolean;
 }
 
-export const getDailyMissOutcome = (currentLives: number): DailyMissOutcome => {
-  if (currentLives > 0) {
+export const getDailyMissOutcome = (currentChances: number): DailyMissOutcome => {
+  if (currentChances > 0) {
     return {
-      remainingLives: currentLives - 1,
+      remainingChances: currentChances - 1,
       isGameOver: false,
     };
   }
 
   return {
-    remainingLives: 0,
+    remainingChances: 0,
     isGameOver: true,
   };
 };
@@ -146,11 +146,11 @@ export const saveDailyLeaderboardEntry = (
 export const createDailyShareText = (
   entry: DailyLeaderboardEntry,
   dateKey: string,
-  totalPeople: number,
+  siteUrl: string,
 ): string =>
   [
     `Trace My Life Daily ${dateKey}`,
     `Score: ${entry.score}`,
-    `Correct: ${entry.correctGuesses}/${totalPeople}`,
-    `Helpers saved: ${entry.remainingHelperActions}`,
+    `Correct People: ${entry.correctGuesses}`,
+    siteUrl,
   ].join('\n');
