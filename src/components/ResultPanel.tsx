@@ -132,6 +132,9 @@ export function ResultPanel({
             ? 'Skipped!'
             : `Incorrect: you guessed "${guess || 'nothing'}"`}
       </p>
+      <button className="secondary-button result-next-button" type="button" onClick={onNextRound}>
+        {nextRoundLabel}
+      </button>
       <div className="result-title-row">
         {summary?.imageUrl ? (
           <img className="person-image" src={summary.imageUrl} alt={person.name} />
@@ -184,11 +187,6 @@ export function ResultPanel({
               </div>
             ) : null}
           </>
-        ) : null}
-        {!isLoadingSummary ? (
-          <button className="secondary-button" type="button" onClick={onNextRound}>
-            {nextRoundLabel}
-          </button>
         ) : null}
       </div>
     </aside>

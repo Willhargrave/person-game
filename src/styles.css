@@ -556,12 +556,16 @@ button:disabled {
 .result-panel {
   height: min(620px, calc(100vh - 48px));
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   gap: 14px;
   font-size: 0.98rem;
   overflow: hidden;
   overscroll-behavior: contain;
   touch-action: pan-y;
+}
+
+.result-next-button {
+  justify-self: stretch;
 }
 
 .result-panel p:last-child {
