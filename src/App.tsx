@@ -26,7 +26,7 @@ import {
   readDailyLeaderboard,
   saveDailyLeaderboardEntry,
 } from './utils/dailyChallenge';
-import { dailyRulesItems, dailyRulesTitle } from './utils/dailyRules';
+import { getDailyRulesItems, dailyRulesTitle } from './utils/dailyRules';
 import { getValidPeople, isCorrectGuess, pickRandomPerson } from './utils/people';
 import {
   isRoundIntroReady,
@@ -44,6 +44,18 @@ const initialDailyUnusedHints: RevealedHints = {
   methodOfDeath: true,
   gender: true,
   profession: true,
+};
+
+const allHintsRevealed: RevealedHints = {
+  methodOfDeath: true,
+  gender: true,
+  profession: true,
+};
+
+const noDailyHelperActions: RevealedHints = {
+  methodOfDeath: false,
+  gender: false,
+  profession: false,
 };
 
 const dailyHelperIcons: Array<{ hint: HintKey; icon: string; label: string }> = [
@@ -120,6 +132,7 @@ function App() {
   const [dailyEndReason, setDailyEndReason] = useState<string | null>(null);
   const [isDailyRulesOpen, setIsDailyRulesOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
+  const [chanceNotice, setChanceNotice] = useState<string | null>(null);
   const [revealedHints, setRevealedHints] = useState<RevealedHints>(initialRevealedHints);
   const [isRevealLoading, setIsRevealLoading] = useState(false);
   const [isPanelMinimized, setIsPanelMinimized] = useState(false);
@@ -130,18 +143,24 @@ function App() {
   const malformedCount = Array.isArray(peopleData) ? peopleData.length - people.length : 0;
   const currentHints = person ? (personHints[person.id] ?? fallbackHints) : fallbackHints;
   const revealedHintCount = Object.values(revealedHints).filter(Boolean).length;
-  const isDailyMode = mode === 'daily';
+  const isDailyMode = mode === 'daily' || mode === 'easy-daily';
+  const isEasyDailyMode = mode === 'easy-daily';
+  const dailyModeLabel = isEasyDailyMode ? 'Easy Daily' : 'Daily';
   const isDailyLastPerson = isDailyMode && dailyRoundIndex >= dailyPeople.length - 1;
   const shouldDailyEndAfterResult =
     isDailyMode &&
     result !== null &&
     (isDailyGameOver || (result === 'correct' && isDailyLastPerson));
-  const dailyBlockedHints: RevealedHints = {
-    methodOfDeath: !dailyUnusedHints.methodOfDeath,
-    gender: !dailyUnusedHints.gender,
-    profession: !dailyUnusedHints.profession,
-  };
+  const dailyBlockedHints: RevealedHints = isEasyDailyMode
+    ? { ...noDailyHelperActions }
+    : {
+        methodOfDeath: !dailyUnusedHints.methodOfDeath,
+        gender: !dailyUnusedHints.gender,
+        profession: !dailyUnusedHints.profession,
+      };
   const isRoundReady = isRoundIntroReady(roundIntroStage);
+  const dailyRulesItems = getDailyRulesItems(isEasyDailyMode ? 'easy-daily' : 'daily');
+  const shouldShowUtilityRow = !isEasyDailyMode || isPanelMinimized;
 
   useEffect(
     () => () => {
@@ -202,13 +221,14 @@ function App() {
     }
   };
 
-  const resetRoundState = () => {
+  const resetRoundState = (nextRevealedHints = initialRevealedHints) => {
     setGuess('');
     setSubmittedGuess('');
     setResult(null);
     setIsRevealLoading(false);
     setIsPanelMinimized(false);
-    setRevealedHints({ ...initialRevealedHints });
+    setChanceNotice(null);
+    setRevealedHints({ ...nextRevealedHints });
     setRoundIntroStage('birth');
   };
 
@@ -230,28 +250,34 @@ function App() {
     setDailyEndReason(null);
     setIsDailyRulesOpen(false);
     setShareStatus(null);
+    setChanceNotice(null);
     resetRoundState();
   };
 
-  const startDaily = () => {
+  const startDaily = (nextMode: Extract<GameMode, 'daily' | 'easy-daily'> = 'daily') => {
     clearRevealTimer();
+    const isEasyDaily = nextMode === 'easy-daily';
+
     setUsername('');
-    setMode('daily');
+    setMode(nextMode);
     setPerson(dailyPeople[0] ?? null);
     setUsedPersonIds([]);
     setDailyRoundIndex(0);
     setDailyCorrectGuesses(0);
     setDailyChances(dailyInitialChances);
-    setDailyUnusedHints({ ...initialDailyUnusedHints });
+    setDailyUnusedHints(
+      isEasyDaily ? { ...noDailyHelperActions } : { ...initialDailyUnusedHints },
+    );
     setIsDailyGameOver(false);
     setDailyEntry(null);
     setDailyFinalStats(null);
     setDailyEndReason(null);
     setIsDailyRulesOpen(true);
     setShareStatus(null);
+    setChanceNotice(null);
     setIsSessionComplete(false);
     loadLeaderboard();
-    resetRoundState();
+    resetRoundState(isEasyDaily ? allHintsRevealed : initialRevealedHints);
   };
 
   const returnToModeSelect = () => {
@@ -265,6 +291,7 @@ function App() {
     setIsDailyGameOver(false);
     setIsDailyRulesOpen(false);
     setShareStatus(null);
+    setChanceNotice(null);
     resetRoundState();
   };
 
@@ -280,7 +307,9 @@ function App() {
   };
 
   const finishDaily = (reason: string) => {
-    const remainingHelperActions = getRemainingDailyHelperActions(dailyUnusedHints);
+    const remainingHelperActions = isEasyDailyMode
+      ? 0
+      : getRemainingDailyHelperActions(dailyUnusedHints);
     setDailyFinalStats({
       score: getDailyScore(dailyCorrectGuesses, remainingHelperActions),
       correctGuesses: dailyCorrectGuesses,
@@ -291,6 +320,7 @@ function App() {
     setShareStatus(null);
     setDailyEndReason(reason);
     setIsDailyRulesOpen(false);
+    setChanceNotice(null);
     setIsSessionComplete(true);
     setPerson(null);
     setResult(null);
@@ -321,6 +351,10 @@ function App() {
   };
 
   const handleRevealHint = (hint: HintKey) => {
+    if (isEasyDailyMode) {
+      return;
+    }
+
     if (isDailyMode) {
       if (!dailyUnusedHints[hint]) {
         return;
@@ -354,6 +388,10 @@ function App() {
         const missOutcome = getDailyMissOutcome(dailyChances);
         setDailyChances(missOutcome.remainingChances);
         setIsDailyGameOver(missOutcome.isGameOver);
+
+        if (isEasyDailyMode && !missOutcome.isGameOver) {
+          setChanceNotice('1 chance remaining');
+        }
       }
 
       return;
@@ -390,7 +428,7 @@ function App() {
       const nextRoundIndex = dailyRoundIndex + 1;
       setDailyRoundIndex(nextRoundIndex);
       setPerson(dailyPeople[nextRoundIndex] ?? null);
-      resetRoundState();
+      resetRoundState(isEasyDailyMode ? allHintsRevealed : initialRevealedHints);
       return;
     }
 
@@ -446,8 +484,11 @@ function App() {
         </div>
         <section className="panel mode-panel">
           <div className="mode-actions">
-            <button type="button" onClick={startDaily}>
+            <button type="button" onClick={() => startDaily()}>
               Daily
+            </button>
+            <button type="button" onClick={() => startDaily('easy-daily')}>
+              Easy Daily
             </button>
             <button type="button" onClick={startPractice}>
               Practice
@@ -469,7 +510,7 @@ function App() {
       <main className="app-shell empty-state">
         <section className="panel daily-complete-panel">
           <div className="panel-heading">
-            <p className="eyebrow">Daily Challenge {dailyDateKey}</p>
+            <p className="eyebrow">{dailyModeLabel} Challenge {dailyDateKey}</p>
             <h1>{dailyFinalStats.score} points</h1>
           </div>
           {dailyEndReason ? <p>{dailyEndReason}</p> : null}
@@ -478,10 +519,12 @@ function App() {
               <dt>Correct</dt>
               <dd>{dailyFinalStats.correctGuesses}</dd>
             </div>
-            <div>
-              <dt>Helper bonus</dt>
-              <dd>{dailyFinalStats.remainingHelperActions * 2}</dd>
-            </div>
+            {!isEasyDailyMode ? (
+              <div>
+                <dt>Helper bonus</dt>
+                <dd>{dailyFinalStats.remainingHelperActions * 2}</dd>
+              </div>
+            ) : null}
             <div className="daily-score-total">
               <dt>Total</dt>
               <dd>{dailyFinalStats.score}</dd>
@@ -507,8 +550,12 @@ function App() {
                 <button type="button" onClick={handleShareDailyScore}>
                   Share score
                 </button>
-                <button className="secondary-button" type="button" onClick={startDaily}>
-                  Play Daily again
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => startDaily(isEasyDailyMode ? 'easy-daily' : 'daily')}
+                >
+                  Play {dailyModeLabel} again
                 </button>
                 <button className="secondary-button" type="button" onClick={returnToModeSelect}>
                   Change mode
@@ -573,65 +620,79 @@ function App() {
 
   return (
     <main className="app-shell">
-      <GameMap person={person} introStage={roundIntroStage} />
+      <GameMap
+        person={person}
+        introStage={roundIntroStage}
+        deathCause={isEasyDailyMode ? currentHints.methodOfDeath : undefined}
+      />
       <div className="grain" aria-hidden="true" />
       {isDailyMode && isDailyRulesOpen ? (
         <DailyRulesCard
           title={dailyRulesTitle}
           items={dailyRulesItems}
+          startLabel={isEasyDailyMode ? 'Start Easy Daily' : 'Start Daily'}
           onDismiss={() => setIsDailyRulesOpen(false)}
         />
       ) : null}
       <div className={`ui-stack ${isPanelMinimized ? 'minimized' : ''}`}>
-        <div className="utility-row">
-          <div
-            className={`score-panel ${isDailyMode ? 'daily-score-panel' : ''}`}
-            aria-label="Current score"
-          >
-            {isDailyMode ? (
-              <span className="daily-status-icons">
-                <span className="daily-chance-icons" aria-label="Daily chances">
-                  <span
-                    className={`daily-chance-icon ${dailyChances > 0 ? '' : 'used'}`}
-                    title={dailyChances > 0 ? 'Chance available' : 'Chance used'}
-                    aria-label={dailyChances > 0 ? 'Chance available' : 'Chance used'}
-                  >
-                    {dailyChanceIcon}
-                  </span>
-                </span>
-                <span className="daily-helper-icons" aria-label="Daily helpers">
-                  {dailyHelperIcons.map((helper) => (
-                    <span
-                      key={helper.hint}
-                      className={`daily-helper-icon ${
-                        dailyUnusedHints[helper.hint] ? '' : 'used'
-                      }`}
-                      title={helper.label}
-                      aria-label={`${helper.label}: ${
-                        dailyUnusedHints[helper.hint] ? 'available' : 'used'
-                      }`}
-                    >
-                      {helper.icon}
+        {shouldShowUtilityRow ? (
+          <div className="utility-row">
+            {!isEasyDailyMode ? (
+              <div
+                className={`score-panel ${isDailyMode ? 'daily-score-panel' : ''}`}
+                aria-label="Current score"
+              >
+                {isDailyMode ? (
+                  <span className="daily-status-icons">
+                    <span className="daily-chance-icons" aria-label="Daily chances">
+                      <span
+                        className={`daily-chance-icon ${dailyChances > 0 ? '' : 'used'}`}
+                        title={dailyChances > 0 ? 'Chance available' : 'Chance used'}
+                        aria-label={dailyChances > 0 ? 'Chance available' : 'Chance used'}
+                      >
+                        {dailyChanceIcon}
+                      </span>
                     </span>
-                  ))}
-                </span>
-              </span>
-            ) : (
-              `Score: ${score}`
-            )}
+                    <span className="daily-helper-icons" aria-label="Daily helpers">
+                      {dailyHelperIcons.map((helper) => (
+                        <span
+                          key={helper.hint}
+                          className={`daily-helper-icon ${
+                            !dailyUnusedHints[helper.hint] ? 'used' : ''
+                          }`}
+                          title={helper.label}
+                          aria-label={`${helper.label}: ${
+                            dailyUnusedHints[helper.hint] ? 'available' : 'used'
+                          }`}
+                        >
+                          {helper.icon}
+                        </span>
+                      ))}
+                    </span>
+                  </span>
+                ) : (
+                  `Score: ${score}`
+                )}
+              </div>
+            ) : null}
+            {isPanelMinimized ? (
+              <button
+                className="panel-toggle"
+                type="button"
+                onClick={() => setIsPanelMinimized(false)}
+                aria-label="Restore panel"
+                aria-expanded={false}
+              >
+                +
+              </button>
+            ) : null}
           </div>
-          {isPanelMinimized ? (
-            <button
-              className="panel-toggle"
-              type="button"
-              onClick={() => setIsPanelMinimized(false)}
-              aria-label="Restore panel"
-              aria-expanded={false}
-            >
-              +
-            </button>
-          ) : null}
-        </div>
+        ) : null}
+        {chanceNotice ? (
+          <section className="panel chance-notice" role="status" aria-live="polite">
+            <p>{chanceNotice}</p>
+          </section>
+        ) : null}
         {!isPanelMinimized ? (
           <>
             {isRevealLoading ? (
@@ -667,6 +728,7 @@ function App() {
                 hints={currentHints}
                 revealedHints={revealedHints}
                 disabledHints={isDailyMode ? dailyBlockedHints : undefined}
+                displayMode={isEasyDailyMode ? 'easy-daily' : 'interactive'}
                 onRevealHint={handleRevealHint}
                 onMinimize={() => setIsPanelMinimized(true)}
               />

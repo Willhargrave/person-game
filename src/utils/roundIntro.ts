@@ -1,4 +1,4 @@
-export type RoundIntroStage = 'birth' | 'route' | 'death' | 'ready';
+export type RoundIntroStage = 'birth' | 'route' | 'death' | 'overview' | 'settle' | 'ready';
 
 export interface RoundIntroStep {
   stage: RoundIntroStage;
@@ -11,11 +11,16 @@ export interface RoutePoint {
 }
 
 export const roundIntroRouteDurationMs = 2000;
+export const roundIntroDeathHoldMs = 1800;
+export const roundIntroOverviewDurationMs = 1800;
+export const roundIntroSettleMs = 250;
 
 export const roundIntroSteps: RoundIntroStep[] = [
   { stage: 'birth', delayMs: 1500 },
   { stage: 'route', delayMs: roundIntroRouteDurationMs },
-  { stage: 'death', delayMs: 1600 },
+  { stage: 'death', delayMs: roundIntroDeathHoldMs },
+  { stage: 'overview', delayMs: roundIntroOverviewDurationMs },
+  { stage: 'settle', delayMs: roundIntroSettleMs },
   { stage: 'ready', delayMs: 0 },
 ];
 

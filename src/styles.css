@@ -305,6 +305,21 @@ input {
   gap: 12px;
 }
 
+.chance-notice {
+  background:
+    linear-gradient(180deg, rgba(255, 251, 238, 0.96), rgba(238, 226, 202, 0.92)),
+    #f2e8d0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.92rem;
+  font-weight: 900;
+  text-align: center;
+  padding-block: 12px;
+}
+
+.chance-notice p {
+  margin: 0;
+}
+
 .reveal-loading-panel p {
   margin: 0;
   color: #4d422f;
@@ -369,6 +384,34 @@ h2 {
 
 .clue-grid div {
   padding-left: 0;
+}
+
+.person-info-reveal {
+  animation: personInfoReveal 0.48s ease-out both;
+}
+
+.person-info-birth {
+  animation-delay: 0.16s;
+}
+
+.person-info-death {
+  animation-delay: 0.34s;
+}
+
+.person-info-hints {
+  animation-delay: 0.54s;
+}
+
+@keyframes personInfoReveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 dt {
@@ -967,6 +1010,21 @@ button:disabled {
   white-space: normal;
 }
 
+.round-death-tooltip {
+  width: max-content;
+  max-width: min(380px, calc(100vw - 32px));
+}
+
+.round-tooltip-content {
+  display: grid;
+  gap: 3px;
+  line-height: 1.25;
+}
+
+.round-tooltip-content span {
+  display: block;
+}
+
 @media (max-width: 720px) {
   body {
     overflow: auto;
@@ -1007,6 +1065,10 @@ button:disabled {
     max-height: min(72dvh, 520px);
   }
 
+  .round-death-tooltip {
+    max-width: min(340px, calc(100vw - 24px));
+  }
+
   .mode-intro h1 {
     font-size: 2.6rem;
   }
@@ -1044,7 +1106,25 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .person-info-birth {
+    animation-delay: 0.12s;
+  }
+
+  .person-info-death {
+    animation-delay: 0.26s;
+  }
+
+  .person-info-hints {
+    animation-delay: 0.42s;
+  }
+
   h1 {
     font-size: 1.55rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .person-info-reveal {
+    animation: none;
   }
 }

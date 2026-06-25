@@ -89,6 +89,10 @@ describe('daily challenge utilities', () => {
     assert.equal(getDailyScore(4, 2), 8);
   });
 
+  it('scores easy daily without helper bonuses', () => {
+    assert.equal(getDailyScore(4, 0), 4);
+  });
+
   it('uses a chance before ending the daily run', () => {
     assert.deepEqual(getDailyMissOutcome(1), {
       remainingChances: 0,

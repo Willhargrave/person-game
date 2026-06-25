@@ -3,10 +3,16 @@ import type { DailyRulesItem } from '../utils/dailyRules';
 interface DailyRulesCardProps {
   title: string;
   items: DailyRulesItem[];
+  startLabel?: string;
   onDismiss: () => void;
 }
 
-export function DailyRulesCard({ title, items, onDismiss }: DailyRulesCardProps) {
+export function DailyRulesCard({
+  title,
+  items,
+  startLabel = 'Start Daily',
+  onDismiss,
+}: DailyRulesCardProps) {
   return (
     <div className="daily-rules-layer" role="presentation">
       <section
@@ -50,7 +56,7 @@ export function DailyRulesCard({ title, items, onDismiss }: DailyRulesCardProps)
           ))}
         </ul>
         <button type="button" onClick={onDismiss} autoFocus>
-          Start Daily
+          {startLabel}
         </button>
       </section>
     </div>

@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react';
 import type { HistoricalPerson } from '../types';
 import {
   getRoutePointAtProgress,
+  roundIntroOverviewDurationMs,
   roundIntroRouteDurationMs,
   type RoundIntroStage,
 } from '../utils/roundIntro';
@@ -11,6 +12,7 @@ import {
 interface GameMapProps {
   person: HistoricalPerson;
   introStage?: RoundIntroStage;
+  deathCause?: string;
 }
 
 const worldBounds: LatLngBoundsExpression = [
@@ -80,15 +82,22 @@ function MapFocus({ person, introStage = 'ready' }: GameMapProps) {
       return;
     }
 
-    if (bounds.isValid()) {
-      map.fitBounds(bounds.pad(0.9), { animate: true, maxZoom: 4 });
+    if (introStage === 'overview') {
+      if (bounds.isValid()) {
+        map.flyToBounds(bounds.pad(0.9), {
+          animate: true,
+          duration: roundIntroOverviewDurationMs / 1000,
+          maxZoom: 4,
+        });
+      }
+      return;
     }
   }, [introStage, map, person]);
 
   return null;
 }
 
-export function GameMap({ person, introStage = 'ready' }: GameMapProps) {
+export function GameMap({ person, introStage = 'ready', deathCause }: GameMapProps) {
   const route = useMemo(
     () => [
       [person.birthCoordinates.lat, person.birthCoordinates.lng] as [number, number],
@@ -96,8 +105,17 @@ export function GameMap({ person, introStage = 'ready' }: GameMapProps) {
     ],
     [person],
   );
-  const showRoute = introStage === 'route' || introStage === 'death' || introStage === 'ready';
-  const showDeath = introStage === 'death' || introStage === 'ready';
+  const showRoute =
+    introStage === 'route' ||
+    introStage === 'death' ||
+    introStage === 'overview' ||
+    introStage === 'settle' ||
+    introStage === 'ready';
+  const showDeath =
+    introStage === 'death' ||
+    introStage === 'overview' ||
+    introStage === 'settle' ||
+    introStage === 'ready';
 
   return (
     <MapContainer
@@ -150,12 +168,24 @@ export function GameMap({ person, introStage = 'ready' }: GameMapProps) {
             direction="top"
             offset={[0, -12]}
             opacity={1}
-            permanent={introStage === 'death'}
-            className={introStage === 'death' ? 'round-location-tooltip' : undefined}
+            permanent={
+              introStage === 'death' || introStage === 'overview' || introStage === 'settle'
+            }
+            className={
+              introStage === 'death' || introStage === 'overview' || introStage === 'settle'
+                ? `round-location-tooltip ${deathCause ? 'round-death-tooltip' : ''}`
+                : undefined
+            }
           >
-            {introStage === 'death'
-              ? `Died in ${person.deathPlace} on ${person.deathDate}`
-              : 'Death place'}
+            {introStage === 'death' || introStage === 'overview' || introStage === 'settle' ? (
+              <span className="round-tooltip-content">
+                <span>Died in {person.deathPlace}</span>
+                <span>on {person.deathDate}</span>
+                {deathCause ? <span>of {deathCause}</span> : null}
+              </span>
+            ) : (
+              'Death place'
+            )}
           </Tooltip>
         </Marker>
       ) : null}

@@ -3,7 +3,10 @@ import { describe, it } from 'node:test';
 import {
   getRoutePointAtProgress,
   isRoundIntroReady,
+  roundIntroDeathHoldMs,
+  roundIntroOverviewDurationMs,
   roundIntroRouteDurationMs,
+  roundIntroSettleMs,
   roundIntroSteps,
 } from './roundIntro.js';
 
@@ -11,7 +14,7 @@ describe('round intro sequence', () => {
   it('loads birth, route, death, then ready in order', () => {
     assert.deepEqual(
       roundIntroSteps.map((step) => step.stage),
-      ['birth', 'route', 'death', 'ready'],
+      ['birth', 'route', 'death', 'overview', 'settle', 'ready'],
     );
   });
 
@@ -19,15 +22,20 @@ describe('round intro sequence', () => {
     assert.equal(isRoundIntroReady('birth'), false);
     assert.equal(isRoundIntroReady('route'), false);
     assert.equal(isRoundIntroReady('death'), false);
+    assert.equal(isRoundIntroReady('overview'), false);
+    assert.equal(isRoundIntroReady('settle'), false);
     assert.equal(isRoundIntroReady('ready'), true);
   });
 
   it('leaves enough time between each reveal', () => {
     assert.deepEqual(
       roundIntroSteps.map((step) => step.delayMs),
-      [1500, 2000, 1600, 0],
+      [1500, 2000, 1800, 1800, 250, 0],
     );
     assert.equal(roundIntroSteps[1]?.delayMs, roundIntroRouteDurationMs);
+    assert.equal(roundIntroSteps[2]?.delayMs, roundIntroDeathHoldMs);
+    assert.equal(roundIntroSteps[3]?.delayMs, roundIntroOverviewDurationMs);
+    assert.equal(roundIntroSteps[4]?.delayMs, roundIntroSettleMs);
   });
 
   it('calculates the route-follow camera position', () => {
