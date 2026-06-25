@@ -1,4 +1,5 @@
-import type { HistoricalPerson, HintKey, PersonHints } from './types.js';
+import type { HistoricalPerson, HintKey, PersonHints, ProfessionCategory } from './types.js';
+import { getProfessionCategory } from './utils/professionCategories.js';
 
 export type Language = 'en' | 'ja';
 
@@ -32,6 +33,8 @@ export interface UiCopy {
   guessPlaceholder: string;
   submit: string;
   skip: string;
+  skipRemaining: string;
+  giveUp: string;
   nextRound: string;
   viewLeaderboard: string;
   score: string;
@@ -86,6 +89,7 @@ export interface UiCopy {
   noScores: string;
   dailyMode: string;
   easyDailyMode: string;
+  nextDailyChallengeIn: (hours: number, minutes: number, seconds: number) => string;
   ranOutOfChances: string;
   completedDaily: string;
 }
@@ -109,11 +113,13 @@ const uiCopy: Record<Language, UiCopy> = {
       `${count} malformed seed ${count === 1 ? 'record was' : 'records were'} skipped.`,
     rulesTitle: 'Rules',
     startDaily: 'Start Daily',
-    startEasyDaily: 'Start Easy Daily',
+    startEasyDaily: 'Start',
     whoAmI: 'Who Am I?',
     guessPlaceholder: 'Enter a full name',
     submit: 'Submit',
     skip: 'Skip',
+    skipRemaining: '1 skip remaining',
+    giveUp: 'Give up',
     nextRound: 'Next round',
     viewLeaderboard: 'View leaderboard',
     score: 'Score',
@@ -142,7 +148,7 @@ const uiCopy: Record<Language, UiCopy> = {
     diedIn: (place, date, cause) =>
       [`Died in ${place}`, `on ${date}`, ...(cause ? [`of ${cause}`] : [])].join('\n'),
     correct: 'Correct',
-    skipped: 'Skipped!',
+    skipped: 'You skipped!',
     incorrectGuess: (guess) => `Incorrect: you guessed "${guess}"`,
     nothing: 'nothing',
     born: 'Born',
@@ -172,8 +178,10 @@ const uiCopy: Record<Language, UiCopy> = {
     playAgain: (mode) => `Play ${mode} again`,
     leaderboard: 'Daily Leaderboard',
     noScores: 'No scores yet.',
-    dailyMode: 'Daily',
-    easyDailyMode: 'Easy Daily',
+    dailyMode: 'Daily Hard',
+    easyDailyMode: 'Daily',
+    nextDailyChallengeIn: (hours, minutes, seconds) =>
+      `Next daily challenge in ${hours} hours ${minutes} minutes ${seconds} seconds`,
     ranOutOfChances: 'You ran out of chances.',
     completedDaily: 'You completed every person in today\'s challenge.',
   },
@@ -194,11 +202,13 @@ const uiCopy: Record<Language, UiCopy> = {
     malformedSeed: (count) => `不完全なシードデータ ${count} 件をスキップしました。`,
     rulesTitle: 'ルール',
     startDaily: 'デイリーを開始',
-    startEasyDaily: 'かんたんデイリーを開始',
+    startEasyDaily: '開始',
     whoAmI: '私は誰？',
     guessPlaceholder: 'フルネームを入力',
     submit: '回答',
     skip: 'スキップ',
+    skipRemaining: '残り1スキップ',
+    giveUp: 'ギブアップ',
     nextRound: '次の問題',
     viewLeaderboard: 'ランキングを見る',
     score: 'スコア',
@@ -227,7 +237,7 @@ const uiCopy: Record<Language, UiCopy> = {
     diedIn: (place, date, cause) =>
       [`${date}`, `${place}で死去`, ...(cause ? [`死因: ${cause}`] : [])].join('\n'),
     correct: '正解',
-    skipped: 'スキップ',
+    skipped: 'スキップしました',
     incorrectGuess: (guess) => `不正解: 「${guess}」と回答しました`,
     nothing: '未入力',
     born: '誕生',
@@ -257,10 +267,51 @@ const uiCopy: Record<Language, UiCopy> = {
     playAgain: (mode) => `${mode}をもう一度`,
     leaderboard: 'デイリーランキング',
     noScores: 'まだスコアがありません。',
-    dailyMode: 'デイリー',
-    easyDailyMode: 'かんたんデイリー',
+    dailyMode: 'デイリーハード',
+    easyDailyMode: 'デイリー',
+    nextDailyChallengeIn: (hours, minutes, seconds) =>
+      `次のデイリーチャレンジまで ${hours}時間 ${minutes}分 ${seconds}秒`,
     ranOutOfChances: 'チャンスがなくなりました。',
     completedDaily: '今日のチャレンジをすべて完了しました。',
+  },
+};
+
+const professionCategoryLabels: Record<Language, Record<ProfessionCategory, string>> = {
+  en: {
+    politician: 'Politician',
+    explorer: 'Explorer',
+    'religious-figure': 'Religious Figure',
+    entertainer: 'Entertainer',
+    sportsperson: 'Sportsperson',
+    writer: 'Writer',
+    philosopher: 'Philosopher',
+    'royal-family': 'Royal Family',
+    scientist: 'Scientist',
+    artist: 'Artist',
+    'military-figure': 'Military Figure',
+    activist: 'Activist',
+    revolutionary: 'Revolutionary',
+    'business-figure': 'Business Figure',
+    'criminal-outlaw': 'Criminal / Outlaw',
+    other: 'Other',
+  },
+  ja: {
+    politician: '政治家',
+    explorer: '探検家',
+    'religious-figure': '宗教家',
+    entertainer: '芸能人',
+    sportsperson: 'スポーツ選手',
+    writer: '作家',
+    philosopher: '哲学者',
+    'royal-family': '王族',
+    scientist: '科学者',
+    artist: '芸術家',
+    'military-figure': '軍人',
+    activist: '活動家',
+    revolutionary: '革命家',
+    'business-figure': '実業家',
+    'criminal-outlaw': '犯罪者・無法者',
+    other: 'その他',
   },
 };
 
@@ -414,6 +465,20 @@ export const getLocalizedHints = (hints: PersonHints, language: Language): Perso
     methodOfDeath: hintValueTranslations[hints.methodOfDeath] ?? hints.methodOfDeath,
     gender: hintValueTranslations[hints.gender] ?? hints.gender,
     profession: hintValueTranslations[hints.profession] ?? hints.profession,
+  };
+};
+
+export const getLocalizedClueHints = (
+  hints: PersonHints,
+  language: Language,
+  personId?: string,
+): PersonHints => {
+  const localizedHints = getLocalizedHints(hints, language);
+  const professionCategory = getProfessionCategory(hints.profession, personId);
+
+  return {
+    ...localizedHints,
+    profession: professionCategoryLabels[language][professionCategory],
   };
 };
 

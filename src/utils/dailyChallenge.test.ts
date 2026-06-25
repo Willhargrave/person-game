@@ -3,8 +3,10 @@ import { describe, it } from 'node:test';
 import type { DailyLeaderboardEntry, HistoricalPerson, RevealedHints } from '../types.js';
 import {
   createDailyShareText,
+  getDailyResetCountdown,
   getDailyPeople,
   getDailyMissOutcome,
+  getNextDailyResetAt,
   getDailyScore,
   getRemainingDailyHelperActions,
   readDailyLeaderboard,
@@ -54,6 +56,16 @@ const people: HistoricalPerson[] = [
     birthCoordinates: { lat: 19.35, lng: -99.16 },
     deathCoordinates: { lat: 19.35, lng: -99.16 },
   },
+  {
+    id: 'shane-warne',
+    name: 'Shane Warne',
+    birthDate: '1969',
+    deathDate: '2022',
+    birthPlace: 'Upper Ferntree Gully, Australia',
+    deathPlace: 'Koh Samui, Thailand',
+    birthCoordinates: { lat: -37.9, lng: 145.3 },
+    deathCoordinates: { lat: 9.5, lng: 100.0 },
+  },
 ];
 
 const makeEntry = (
@@ -75,7 +87,25 @@ describe('daily challenge utilities', () => {
     const secondOrder = getDailyPeople(people, '2026-06-23').map((person) => person.id);
 
     assert.deepEqual(firstOrder, secondOrder);
-    assert.deepEqual(firstOrder.sort(), people.map((person) => person.id).sort());
+    assert.deepEqual([...firstOrder].sort(), ['frida-kahlo', 'ibn-sina']);
+  });
+
+  it('removes obscure people from the daily order before shuffling', () => {
+    const dailyOrder = getDailyPeople(people, '2026-06-23').map((person) => person.id);
+
+    assert.deepEqual(dailyOrder.includes('shane-warne'), false);
+  });
+
+  it('resets the daily challenge at midnight UTC', () => {
+    assert.equal(
+      getNextDailyResetAt(new Date('2026-06-25T23:59:58.000Z')).toISOString(),
+      '2026-06-26T00:00:00.000Z',
+    );
+    assert.deepEqual(getDailyResetCountdown(new Date('2026-06-25T22:58:57.000Z')), {
+      hours: 1,
+      minutes: 1,
+      seconds: 3,
+    });
   });
 
   it('scores correct guesses plus saved helper actions', () => {
@@ -155,6 +185,25 @@ describe('daily challenge utilities', () => {
         'Trace My Life デイリー 2026-06-23',
         'スコア: 7',
         '正解数: 7',
+        'https://person-game-iota.vercel.app/',
+      ].join('\n'),
+    );
+  });
+
+  it('produces shorter easy daily share text without correct people', () => {
+    const entry = makeEntry('player', 7, '2026-06-25T10:00:00.000Z');
+
+    assert.equal(
+      createDailyShareText(
+        entry,
+        '2026-06-25',
+        'https://person-game-iota.vercel.app/',
+        'en',
+        'easy-daily',
+      ),
+      [
+        'Trace My Life Daily 2026-06-25',
+        'Score: 7',
         'https://person-game-iota.vercel.app/',
       ].join('\n'),
     );

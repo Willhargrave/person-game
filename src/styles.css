@@ -1047,6 +1047,18 @@ button:disabled {
   gap: 16px;
 }
 
+.daily-complete-layout {
+  display: grid;
+  width: min(980px, calc(100vw - 40px));
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.82fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.daily-complete-layout .daily-complete-panel {
+  width: auto;
+}
+
 .mode-panel {
   grid-row: 3;
   justify-items: stretch;
@@ -1149,6 +1161,7 @@ button:disabled {
 
 .leaderboard-section {
   display: grid;
+  width: auto;
   gap: 10px;
 }
 
@@ -1297,6 +1310,11 @@ button:disabled {
 
   .mode-intro p {
     font-size: 0.9rem;
+  }
+
+  .daily-complete-layout {
+    width: calc(100vw - 24px);
+    grid-template-columns: 1fr;
   }
 
   .result-panel {

@@ -1,4 +1,4 @@
-import type { PersonHints } from '../types';
+import type { PersonHints } from '../types.js';
 
 export const personHints: Record<string, PersonHints> = {
   'cleopatra-vii': { methodOfDeath: 'Suicide', gender: 'Female', profession: 'Queen' },

@@ -1,5 +1,8 @@
 import type { DailyLeaderboardEntry, HistoricalPerson, HintKey } from '../types.js';
 import type { Language } from '../i18n.js';
+import { isObscurePerson } from './people.js';
+
+export type DailyShareMode = 'daily' | 'easy-daily';
 
 export const dailyHelperBonusPoints = 2;
 export const dailyInitialChances = 1;
@@ -28,12 +31,42 @@ const seededRandom = (seed: number) => {
 
 export const getDailyDateKey = (date = new Date()): string => date.toISOString().slice(0, 10);
 
+export interface DailyResetCountdown {
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+export const getNextDailyResetAt = (date = new Date()): Date =>
+  new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate() + 1,
+      0,
+      0,
+      0,
+      0,
+    ),
+  );
+
+export const getDailyResetCountdown = (date = new Date()): DailyResetCountdown => {
+  const millisecondsUntilReset = Math.max(getNextDailyResetAt(date).getTime() - date.getTime(), 0);
+  const totalSeconds = Math.floor(millisecondsUntilReset / 1000);
+
+  return {
+    hours: Math.floor(totalSeconds / 3600),
+    minutes: Math.floor((totalSeconds % 3600) / 60),
+    seconds: totalSeconds % 60,
+  };
+};
+
 export const getDailyPeople = (
   people: HistoricalPerson[],
   dateKey = getDailyDateKey(),
 ): HistoricalPerson[] => {
   const random = seededRandom(getSeedForDate(dateKey));
-  const shuffled = [...people];
+  const shuffled = people.filter((person) => !isObscurePerson(person));
 
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
     const swapIndex = Math.floor(random() * (index + 1));
@@ -149,17 +182,19 @@ export const createDailyShareText = (
   dateKey: string,
   siteUrl: string,
   language: Language = 'en',
+  mode: DailyShareMode = 'daily',
 ): string =>
-  language === 'ja'
-    ? [
+  [
+    ...(language === 'ja'
+      ? [
         `Trace My Life デイリー ${dateKey}`,
         `スコア: ${entry.score}`,
-        `正解数: ${entry.correctGuesses}`,
-        siteUrl,
-      ].join('\n')
-    : [
+        ...(mode === 'easy-daily' ? [] : [`正解数: ${entry.correctGuesses}`]),
+      ]
+      : [
         `Trace My Life Daily ${dateKey}`,
         `Score: ${entry.score}`,
-        `Correct People: ${entry.correctGuesses}`,
-        siteUrl,
-      ].join('\n');
+        ...(mode === 'easy-daily' ? [] : [`Correct People: ${entry.correctGuesses}`]),
+      ]),
+    siteUrl,
+  ].join('\n');

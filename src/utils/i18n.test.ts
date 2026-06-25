@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import type { HistoricalPerson, PersonHints } from '../types.js';
 import {
   formatHistoricalDate,
+  getLocalizedClueHints,
   getLocalizedGuessNames,
   getLocalizedHints,
   getLocalizedPerson,
@@ -36,8 +37,18 @@ describe('i18n helpers', () => {
 
   it('returns UI copy for English and Japanese', () => {
     assert.equal(getUiCopy('en').daily, 'Daily (hard mode)');
+    assert.equal(getUiCopy('en').startEasyDaily, 'Start');
+    assert.equal(getUiCopy('en').skipRemaining, '1 skip remaining');
+    assert.equal(getUiCopy('en').giveUp, 'Give up');
+    assert.equal(getUiCopy('en').dailyChallenge(getUiCopy('en').easyDailyMode, '2026-06-25'), 'Daily Challenge 2026-06-25');
+    assert.equal(getUiCopy('en').dailyChallenge(getUiCopy('en').dailyMode, '2026-06-25'), 'Daily Hard Challenge 2026-06-25');
     assert.equal(getUiCopy('en').viewSummary, 'View summary');
     assert.equal(getUiCopy('ja').daily, 'デイリー（ハード）');
+    assert.equal(getUiCopy('ja').startEasyDaily, '開始');
+    assert.equal(getUiCopy('ja').skipRemaining, '残り1スキップ');
+    assert.equal(getUiCopy('ja').giveUp, 'ギブアップ');
+    assert.equal(getUiCopy('ja').dailyChallenge(getUiCopy('ja').easyDailyMode, '2026-06-25'), 'デイリーチャレンジ 2026-06-25');
+    assert.equal(getUiCopy('ja').dailyChallenge(getUiCopy('ja').dailyMode, '2026-06-25'), 'デイリーハードチャレンジ 2026-06-25');
     assert.equal(getUiCopy('ja').backToCard, 'カードに戻る');
   });
 
@@ -61,6 +72,20 @@ describe('i18n helpers', () => {
       methodOfDeath: '暗殺',
       gender: '男性',
       profession: '首相',
+    });
+  });
+
+  it('uses broad profession categories for clue hints', () => {
+    assert.deepEqual(getLocalizedClueHints(hints, 'en'), {
+      methodOfDeath: 'Assassination',
+      gender: 'Male',
+      profession: 'Politician',
+    });
+
+    assert.deepEqual(getLocalizedClueHints(hints, 'ja'), {
+      methodOfDeath: '暗殺',
+      gender: '男性',
+      profession: '政治家',
     });
   });
 });

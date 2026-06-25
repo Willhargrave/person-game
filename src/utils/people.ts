@@ -1,6 +1,7 @@
-import type { HistoricalPerson } from '../types';
-import type { Language } from '../i18n';
-import { getLocalizedGuessNames } from '../i18n';
+import type { HistoricalPerson } from '../types.js';
+import type { Language } from '../i18n.js';
+import { getLocalizedGuessNames } from '../i18n.js';
+import { obscurePersonIds } from '../data/obscurePeople.js';
 
 const hasCoordinates = (value: unknown): value is { lat: number; lng: number } => {
   if (!value || typeof value !== 'object') {
@@ -48,6 +49,26 @@ export const getValidPeople = (data: unknown): HistoricalPerson[] => {
   return data.filter(isHistoricalPerson);
 };
 
+export const isObscurePerson = (person: HistoricalPerson): boolean =>
+  obscurePersonIds.has(person.id);
+
+export const orderPeopleWithObscurePeopleLast = (
+  people: HistoricalPerson[],
+): HistoricalPerson[] => {
+  const visiblePeople: HistoricalPerson[] = [];
+  const obscurePeople: HistoricalPerson[] = [];
+
+  for (const person of people) {
+    if (isObscurePerson(person)) {
+      obscurePeople.push(person);
+    } else {
+      visiblePeople.push(person);
+    }
+  }
+
+  return [...visiblePeople, ...obscurePeople];
+};
+
 export const normalizeGuess = (value: string): string =>
   value
     .trim()
@@ -81,4 +102,23 @@ export const pickRandomPerson = (
 
   const candidates = previousId ? people.filter((person) => person.id !== previousId) : people;
   return candidates[Math.floor(Math.random() * candidates.length)] ?? people[0];
+};
+
+export const pickPracticePerson = (
+  people: HistoricalPerson[],
+  usedPersonIds: string[],
+  openingCount = 5,
+): HistoricalPerson | null => {
+  const unseenPeople = people.filter((person) => !usedPersonIds.includes(person.id));
+
+  if (unseenPeople.length === 0) {
+    return null;
+  }
+
+  const openingRemaining = Math.max(openingCount - usedPersonIds.length, 0);
+  const visibleOpeningPeople =
+    openingRemaining > 0 ? unseenPeople.filter((person) => !isObscurePerson(person)) : unseenPeople;
+  const candidates = visibleOpeningPeople.length > 0 ? visibleOpeningPeople : unseenPeople;
+
+  return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
 };

@@ -20,6 +20,24 @@ export type GuessResult = 'correct' | 'incorrect' | null;
 
 export type HintKey = 'methodOfDeath' | 'gender' | 'profession';
 
+export type ProfessionCategory =
+  | 'politician'
+  | 'explorer'
+  | 'religious-figure'
+  | 'entertainer'
+  | 'sportsperson'
+  | 'writer'
+  | 'philosopher'
+  | 'royal-family'
+  | 'scientist'
+  | 'artist'
+  | 'military-figure'
+  | 'activist'
+  | 'revolutionary'
+  | 'business-figure'
+  | 'criminal-outlaw'
+  | 'other';
+
 export interface PersonHints {
   methodOfDeath: string;
   gender: string;
