@@ -391,15 +391,40 @@ h2 {
 }
 
 .person-info-birth {
-  animation-delay: 0.16s;
+  animation-delay: 0.18s;
+}
+
+.person-info-birth-date {
+  animation-delay: 0.3s;
+}
+
+.person-info-birth-place {
+  animation-delay: 0.42s;
 }
 
 .person-info-death {
-  animation-delay: 0.34s;
+  animation-delay: 0.58s;
 }
 
-.person-info-hints {
-  animation-delay: 0.54s;
+.person-info-death-date {
+  animation-delay: 0.7s;
+}
+
+.person-info-death-place {
+  animation-delay: 0.82s;
+}
+
+.person-info-hints,
+.person-info-detail-methodOfDeath {
+  animation-delay: 0.98s;
+}
+
+.person-info-detail-gender {
+  animation-delay: 1.12s;
+}
+
+.person-info-detail-profession {
+  animation-delay: 1.26s;
 }
 
 @keyframes personInfoReveal {
@@ -474,6 +499,34 @@ dd {
 .hint-button.blocked {
   background: rgba(220, 213, 197, 0.82);
   color: #66583f;
+}
+
+.easy-daily-details {
+  display: grid;
+  gap: 7px;
+  margin: 10px 0 2px;
+}
+
+.easy-daily-detail {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 10px;
+}
+
+.easy-daily-detail dt {
+  font-size: 0.72rem;
+}
+
+.easy-daily-detail dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #30291f;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: right;
 }
 
 .place {
@@ -1107,15 +1160,49 @@ button:disabled {
   }
 
   .person-info-birth {
-    animation-delay: 0.12s;
+    animation-delay: 0.14s;
+  }
+
+  .person-info-birth-date {
+    animation-delay: 0.24s;
+  }
+
+  .person-info-birth-place {
+    animation-delay: 0.34s;
   }
 
   .person-info-death {
-    animation-delay: 0.26s;
+    animation-delay: 0.48s;
   }
 
-  .person-info-hints {
-    animation-delay: 0.42s;
+  .person-info-death-date {
+    animation-delay: 0.58s;
+  }
+
+  .person-info-death-place {
+    animation-delay: 0.68s;
+  }
+
+  .person-info-hints,
+  .person-info-detail-methodOfDeath {
+    animation-delay: 0.82s;
+  }
+
+  .person-info-detail-gender {
+    animation-delay: 0.94s;
+  }
+
+  .person-info-detail-profession {
+    animation-delay: 1.06s;
+  }
+
+  .easy-daily-detail {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .easy-daily-detail dd {
+    text-align: left;
   }
 
   h1 {
