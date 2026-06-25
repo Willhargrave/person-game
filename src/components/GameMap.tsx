@@ -2,7 +2,11 @@ import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'reac
 import L, { type LatLngBoundsExpression } from 'leaflet';
 import { useEffect, useMemo } from 'react';
 import type { HistoricalPerson } from '../types';
-import type { RoundIntroStage } from '../utils/roundIntro';
+import {
+  getRoutePointAtProgress,
+  roundIntroRouteDurationMs,
+  type RoundIntroStage,
+} from '../utils/roundIntro';
 
 interface GameMapProps {
   person: HistoricalPerson;
@@ -45,8 +49,30 @@ function MapFocus({ person, introStage = 'ready' }: GameMapProps) {
     }
 
     if (introStage === 'route') {
-      map.flyTo(deathLocation, 5, { animate: true, duration: 2 });
-      return;
+      let animationFrameId: number | null = null;
+      let animationStart: number | null = null;
+      map.stop();
+      map.setView(birthLocation, 5, { animate: false });
+
+      const animateRoute = (timestamp: number) => {
+        animationStart ??= timestamp;
+        const progress = (timestamp - animationStart) / roundIntroRouteDurationMs;
+        const nextPoint = getRoutePointAtProgress(birthLocation, deathLocation, progress);
+
+        map.setView(L.latLng(nextPoint.lat, nextPoint.lng), 5, { animate: false });
+
+        if (progress < 1) {
+          animationFrameId = window.requestAnimationFrame(animateRoute);
+        }
+      };
+
+      animationFrameId = window.requestAnimationFrame(animateRoute);
+
+      return () => {
+        if (animationFrameId !== null) {
+          window.cancelAnimationFrame(animationFrameId);
+        }
+      };
     }
 
     if (introStage === 'death') {
