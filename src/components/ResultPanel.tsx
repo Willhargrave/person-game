@@ -165,12 +165,18 @@ export function ResultPanel({
       </button>
       <div className="result-title-row">
         {summary?.imageUrl ? (
-          <img className="person-image" src={summary.imageUrl} alt={localizedPerson.name} />
+          <img
+            className="person-image result-card-reveal result-card-photo"
+            src={summary.imageUrl}
+            alt={localizedPerson.name}
+          />
         ) : null}
         <div className="result-title-copy">
-          <h2>{localizedPerson.name}</h2>
-          <p>{hints.profession}</p>
-          <dl className="result-facts">
+          <div className="result-card-reveal result-card-name">
+            <h2>{localizedPerson.name}</h2>
+            <p>{hints.profession}</p>
+          </div>
+          <dl className="result-facts result-card-reveal result-card-facts">
             <div className="timeline-point born-point">
               <dt>{labels.born}</dt>
               <dd className="timeline-date">{localizedPerson.birthDate}</dd>
@@ -198,7 +204,7 @@ export function ResultPanel({
           </dl>
         </div>
       </div>
-      <div className="person-summary">
+      <div className="person-summary result-card-reveal result-card-summary">
         {isLoadingSummary ? <p className="summary-status">{labels.loadingSummary}</p> : null}
         {summaryError ? <p className="summary-status">{summaryError}</p> : null}
         {summary ? (
@@ -228,12 +234,18 @@ export function ResultPanel({
               {nextRoundLabel}
             </button>
             {summary?.imageUrl ? (
-              <img className="person-image result-mobile-image" src={summary.imageUrl} alt={localizedPerson.name} />
+              <img
+                className="person-image result-mobile-image result-card-reveal result-card-photo"
+                src={summary.imageUrl}
+                alt={localizedPerson.name}
+              />
             ) : null}
             <div className="result-mobile-copy">
-              <h2>{localizedPerson.name}</h2>
-              <p>{hints.profession}</p>
-              <dl className="result-facts result-mobile-facts">
+              <div className="result-card-reveal result-card-name">
+                <h2>{localizedPerson.name}</h2>
+                <p>{hints.profession}</p>
+              </div>
+              <dl className="result-facts result-mobile-facts result-card-reveal result-card-facts">
                 <div className="timeline-point born-point">
                   <dt>{labels.born}</dt>
                   <dd className="timeline-date">{localizedPerson.birthDate}</dd>
@@ -269,7 +281,7 @@ export function ResultPanel({
             </button>
           </section>
           <section className="result-mobile-face result-mobile-back" aria-hidden={!isMobileSummaryVisible}>
-            <div className="person-summary result-mobile-summary">
+            <div className="person-summary result-mobile-summary result-card-reveal result-card-summary">
               {isLoadingSummary ? <p className="summary-status">{labels.loadingSummary}</p> : null}
               {summaryError ? <p className="summary-status">{summaryError}</p> : null}
               {summary ? (

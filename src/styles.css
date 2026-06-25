@@ -783,6 +783,26 @@ button:disabled {
   margin-bottom: 0;
 }
 
+.result-card-reveal {
+  animation: personInfoReveal 0.48s ease-out both;
+}
+
+.result-card-name {
+  animation-delay: 0.08s;
+}
+
+.result-card-photo {
+  animation-delay: 0.32s;
+}
+
+.result-card-facts {
+  animation-delay: 0.56s;
+}
+
+.result-card-summary {
+  animation-delay: 0.8s;
+}
+
 .result-title-row {
   display: grid;
   grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
@@ -1086,6 +1106,10 @@ button:disabled {
 }
 
 .language-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border-color: rgba(52, 45, 34, 0.54);
   background: rgba(255, 248, 231, 0.72);
   color: #4d422f;
@@ -1108,9 +1132,29 @@ button:disabled {
   text-align: center;
 }
 
+.source-footer p {
+  margin: 0;
+}
+
+.source-footer p + p {
+  margin-top: 4px;
+}
+
 .source-footer a {
   color: #30291f;
   text-underline-offset: 3px;
+}
+
+.source-footer-icon-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.github-icon {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
 }
 
 .username-form label {
