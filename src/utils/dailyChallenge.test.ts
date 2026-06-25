@@ -145,4 +145,18 @@ describe('daily challenge utilities', () => {
     assert.doesNotMatch(shareText, /Helpers saved/);
     assert.doesNotMatch(shareText, /Correct: 7\/20/);
   });
+
+  it('produces Japanese share text', () => {
+    const entry = makeEntry('player', 7, '2026-06-23T10:00:00.000Z');
+
+    assert.equal(
+      createDailyShareText(entry, '2026-06-23', 'https://person-game-iota.vercel.app/', 'ja'),
+      [
+        'Trace My Life デイリー 2026-06-23',
+        'スコア: 7',
+        '正解数: 7',
+        'https://person-game-iota.vercel.app/',
+      ].join('\n'),
+    );
+  });
 });

@@ -2,6 +2,7 @@ import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'reac
 import L, { type LatLngBoundsExpression } from 'leaflet';
 import { useEffect, useMemo } from 'react';
 import type { HistoricalPerson } from '../types';
+import type { LocalizedPerson, UiCopy } from '../i18n';
 import {
   getRoutePointAtProgress,
   roundIntroOverviewDurationMs,
@@ -11,6 +12,8 @@ import {
 
 interface GameMapProps {
   person: HistoricalPerson;
+  localizedPerson: LocalizedPerson;
+  labels: Pick<UiCopy, 'birthplace' | 'deathPlace' | 'bornIn' | 'diedIn'>;
   introStage?: RoundIntroStage;
   deathCause?: string;
 }
@@ -34,7 +37,12 @@ const deathIcon = L.divIcon({
   iconAnchor: [17, 17],
 });
 
-function MapFocus({ person, introStage = 'ready' }: GameMapProps) {
+interface MapFocusProps {
+  person: HistoricalPerson;
+  introStage?: RoundIntroStage;
+}
+
+function MapFocus({ person, introStage = 'ready' }: MapFocusProps) {
   const map = useMap();
 
   useEffect(() => {
@@ -97,7 +105,13 @@ function MapFocus({ person, introStage = 'ready' }: GameMapProps) {
   return null;
 }
 
-export function GameMap({ person, introStage = 'ready', deathCause }: GameMapProps) {
+export function GameMap({
+  person,
+  localizedPerson,
+  labels,
+  introStage = 'ready',
+  deathCause,
+}: GameMapProps) {
   const route = useMemo(
     () => [
       [person.birthCoordinates.lat, person.birthCoordinates.lng] as [number, number],
@@ -155,11 +169,20 @@ export function GameMap({ person, introStage = 'ready', deathCause }: GameMapPro
           offset={[0, -12]}
           opacity={1}
           permanent={introStage === 'birth'}
-          className={introStage === 'birth' ? 'round-location-tooltip' : undefined}
+          className={introStage === 'birth' ? 'round-location-tooltip round-detail-tooltip' : undefined}
         >
-          {introStage === 'birth'
-            ? `Born in ${person.birthPlace} on ${person.birthDate}`
-            : 'Birthplace'}
+          {introStage === 'birth' ? (
+            <span className="round-tooltip-content">
+              {labels
+                .bornIn(localizedPerson.birthPlace, localizedPerson.birthDate)
+                .split('\n')
+                .map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
+            </span>
+          ) : (
+            labels.birthplace
+          )}
         </Tooltip>
       </Marker>
       {showDeath ? (
@@ -173,18 +196,21 @@ export function GameMap({ person, introStage = 'ready', deathCause }: GameMapPro
             }
             className={
               introStage === 'death' || introStage === 'overview' || introStage === 'settle'
-                ? `round-location-tooltip ${deathCause ? 'round-death-tooltip' : ''}`
+                ? `round-location-tooltip round-detail-tooltip ${deathCause ? 'round-death-tooltip' : ''}`
                 : undefined
             }
           >
             {introStage === 'death' || introStage === 'overview' || introStage === 'settle' ? (
               <span className="round-tooltip-content">
-                <span>Died in {person.deathPlace}</span>
-                <span>on {person.deathDate}</span>
-                {deathCause ? <span>of {deathCause}</span> : null}
+                {labels
+                  .diedIn(localizedPerson.deathPlace, localizedPerson.deathDate, deathCause)
+                  .split('\n')
+                  .map((line) => (
+                    <span key={line}>{line}</span>
+                  ))}
               </span>
             ) : (
-              'Death place'
+              labels.deathPlace
             )}
           </Tooltip>
         </Marker>

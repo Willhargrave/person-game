@@ -4,6 +4,8 @@ interface DailyRulesCardProps {
   title: string;
   items: DailyRulesItem[];
   startLabel?: string;
+  helperIconsLabel: string;
+  chanceIconLabel: string;
   onDismiss: () => void;
 }
 
@@ -11,6 +13,8 @@ export function DailyRulesCard({
   title,
   items,
   startLabel = 'Start Daily',
+  helperIconsLabel,
+  chanceIconLabel,
   onDismiss,
 }: DailyRulesCardProps) {
   return (
@@ -28,7 +32,7 @@ export function DailyRulesCard({
             <li key={item.text}>
               <span>{item.text}</span>
               {item.helperIcons ? (
-                <span className="daily-rules-icons" aria-label="Available reveals">
+                <span className="daily-rules-icons" aria-label={helperIconsLabel}>
                   {item.helperIcons.map((helper) => (
                     <span
                       key={helper.label}
@@ -42,7 +46,7 @@ export function DailyRulesCard({
                 </span>
               ) : null}
               {item.chanceIcon ? (
-                <span className="daily-rules-icons" aria-label="Daily chance">
+                <span className="daily-rules-icons" aria-label={chanceIconLabel}>
                   <span
                     className="daily-chance-icon"
                     title={item.chanceIcon.label}

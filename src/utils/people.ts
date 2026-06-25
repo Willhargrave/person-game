@@ -1,4 +1,6 @@
 import type { HistoricalPerson } from '../types';
+import type { Language } from '../i18n';
+import { getLocalizedGuessNames } from '../i18n';
 
 const hasCoordinates = (value: unknown): value is { lat: number; lng: number } => {
   if (!value || typeof value !== 'object') {
@@ -54,8 +56,16 @@ export const normalizeGuess = (value: string): string =>
     .replace(/\p{Diacritic}/gu, '')
     .replace(/\s+/g, ' ');
 
-export const isCorrectGuess = (guess: string, person: HistoricalPerson): boolean =>
-  normalizeGuess(guess) === normalizeGuess(person.name);
+export const isCorrectGuess = (
+  guess: string,
+  person: HistoricalPerson,
+  language: Language = 'en',
+): boolean => {
+  const normalizedGuess = normalizeGuess(guess);
+  return getLocalizedGuessNames(person, language).some(
+    (name) => normalizeGuess(name) === normalizedGuess,
+  );
+};
 
 export const pickRandomPerson = (
   people: HistoricalPerson[],

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import type { FormEvent } from 'react';
 import type { GuessResult, HistoricalPerson } from '../types';
 import { normalizeGuess } from '../utils/people';
@@ -7,6 +7,14 @@ interface GuessPanelProps {
   guess: string;
   result: GuessResult;
   people: HistoricalPerson[];
+  labels: {
+    title: string;
+    placeholder: string;
+    submit: string;
+    skip: string;
+    nextRound: string;
+  };
+  getPersonName: (person: HistoricalPerson) => string;
   onGuessChange: (guess: string) => void;
   onSubmit: () => void;
   onSkip?: () => void;
@@ -17,12 +25,15 @@ export function GuessPanel({
   guess,
   result,
   people,
+  labels,
+  getPersonName,
   onGuessChange,
   onSubmit,
   onSkip,
   onNextRound,
 }: GuessPanelProps) {
   const isSubmitted = result !== null;
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const normalizedGuess = normalizeGuess(guess);
   const suggestions = useMemo(() => {
     if (normalizedGuess.length < 2 || isSubmitted) {
@@ -31,7 +42,7 @@ export function GuessPanel({
 
     return people
       .filter((person) => {
-        const normalizedName = normalizeGuess(person.name);
+        const normalizedName = normalizeGuess(getPersonName(person));
         const nameParts = normalizedName.split(' ');
 
         return (
@@ -40,7 +51,7 @@ export function GuessPanel({
         );
       })
       .slice(0, 6);
-  }, [isSubmitted, normalizedGuess, people]);
+  }, [getPersonName, isSubmitted, normalizedGuess, people]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -49,17 +60,23 @@ export function GuessPanel({
     }
   };
 
+  const handleSuggestionSelect = (person: HistoricalPerson) => {
+    onGuessChange(getPersonName(person));
+    inputRef.current?.blur();
+  };
+
   return (
     <form className="panel guess-panel" onSubmit={handleSubmit}>
-      <label htmlFor="guess">Who Am I?</label>
+      <label htmlFor="guess">{labels.title}</label>
       <div className="guess-entry">
         <div className="guess-row">
           <input
+            ref={inputRef}
             id="guess"
             type="text"
             value={guess}
             onChange={(event) => onGuessChange(event.target.value)}
-            placeholder="Enter a full name"
+            placeholder={labels.placeholder}
             disabled={isSubmitted}
             autoComplete="off"
             aria-autocomplete="list"
@@ -67,7 +84,7 @@ export function GuessPanel({
             aria-controls="guess-suggestions"
           />
           <button type="submit" disabled={isSubmitted || !guess.trim()}>
-            Submit
+            {labels.submit}
           </button>
         </div>
         {suggestions.length > 0 ? (
@@ -77,9 +94,9 @@ export function GuessPanel({
                 <button
                   type="button"
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => onGuessChange(person.name)}
+                  onClick={() => handleSuggestionSelect(person)}
                 >
-                  {person.name}
+                  {getPersonName(person)}
                 </button>
               </li>
             ))}
@@ -88,12 +105,12 @@ export function GuessPanel({
       </div>
       {!isSubmitted && onSkip ? (
         <button className="secondary-button" type="button" onClick={onSkip}>
-          Skip
+          {labels.skip}
         </button>
       ) : null}
       {isSubmitted ? (
         <button className="secondary-button" type="button" onClick={onNextRound}>
-          Next round
+          {labels.nextRound}
         </button>
       ) : null}
     </form>

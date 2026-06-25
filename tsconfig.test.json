@@ -12,6 +12,8 @@
   },
   "include": [
     "src/types.ts",
+    "src/i18n.ts",
+    "src/utils/i18n.test.ts",
     "src/utils/dailyChallenge.ts",
     "src/utils/dailyChallenge.test.ts",
     "src/utils/dailyRules.ts",

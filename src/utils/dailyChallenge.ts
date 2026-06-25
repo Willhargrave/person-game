@@ -1,4 +1,5 @@
 import type { DailyLeaderboardEntry, HistoricalPerson, HintKey } from '../types.js';
+import type { Language } from '../i18n.js';
 
 export const dailyHelperBonusPoints = 2;
 export const dailyInitialChances = 1;
@@ -147,10 +148,18 @@ export const createDailyShareText = (
   entry: DailyLeaderboardEntry,
   dateKey: string,
   siteUrl: string,
+  language: Language = 'en',
 ): string =>
-  [
-    `Trace My Life Daily ${dateKey}`,
-    `Score: ${entry.score}`,
-    `Correct People: ${entry.correctGuesses}`,
-    siteUrl,
-  ].join('\n');
+  language === 'ja'
+    ? [
+        `Trace My Life デイリー ${dateKey}`,
+        `スコア: ${entry.score}`,
+        `正解数: ${entry.correctGuesses}`,
+        siteUrl,
+      ].join('\n')
+    : [
+        `Trace My Life Daily ${dateKey}`,
+        `Score: ${entry.score}`,
+        `Correct People: ${entry.correctGuesses}`,
+        siteUrl,
+      ].join('\n');
