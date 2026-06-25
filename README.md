@@ -1,67 +1,84 @@
-# Sketch Atlas Guess
+# Trace My Life
 
-A React + TypeScript browser game prototype where the player sees a sketch-style world map and two location clues: birthplace and death place. The dates and place names are shown, but the person's name is hidden until the player submits a guess.
+Trace My Life is a browser guessing game about famous people. Each round starts with a map animation showing where a person was born, then follows a dotted route to where they died. The player uses those clues, dates, and optional hints to work out the hidden name.
 
-## Run
+## How the Game Works
+
+The player chooses one of three modes from the start screen:
+
+- **Daily**: a daily challenge with cause of death, gender, and profession clues revealed from the start.
+- **Daily Hard**: a daily challenge where those clues can each be revealed only once per game.
+- **Practice**: an unlimited practice mode using the same core guessing loop.
+
+Each round loads in stages:
+
+1. The map zooms to the birth location and shows the birth date and place.
+2. A dotted line is drawn toward the death location.
+3. The map follows the line to the death location and shows the death date and place.
+4. The person card loads, then the player enters a guess.
+
+After a guess, the result card reveals the person's name, image, birth/death facts, and a Wikipedia summary. On mobile, the result card can be flipped to read the full summary.
+
+## Daily Rules
+
+Daily modes reset at midnight UTC and use a deterministic daily person order. Obscure people are filtered out of the daily challenge list.
+
+In **Daily**:
+
+- Cause of death, gender, and profession are visible from the start.
+- The player starts with one skip/chance.
+- A wrong answer or skip uses that chance.
+- Once the chance has been used, the skip button changes to **Give up**.
+- The final score is the number of correct answers.
+
+In **Daily Hard**:
+
+- The player starts with one skip/chance.
+- Cause of death, gender, and profession can be revealed as helper actions.
+- Each helper can only be used once per game.
+- The score is the number of correct answers plus two bonus points for each unused helper action.
+
+At the end of a daily run, the player can enter a username for the local daily leaderboard. If the name is left blank, the score is saved as `anonymous`. The share button copies a Wordle-style score summary to the clipboard.
+
+## Language Support
+
+The start screen has English and Japanese language buttons. The selected language changes UI copy, dates, localized person names where available, Wikipedia summary language, and accepted guess names.
+
+## Data
+
+The main person dataset is stored locally in `src/data/historicalPeople.json`. Per-person clues such as cause of death, gender, and profession are stored in `src/data/personHints.ts`.
+
+The app uses:
+
+- **Wikidata** as the source for structured person data.
+- **Wikipedia** for result-card profile summaries and images.
+- A local profession-category mapper so in-game profession clues can be broad, such as `Politician`, `Entertainer`, or `Scientist`, without exposing overly specific occupations.
+
+The app validates seed records before use and skips malformed entries.
+
+## Tech Stack
+
+- **React 19** for the UI.
+- **TypeScript** for app types, game state, and data validation helpers.
+- **Vite** for local development and production builds.
+- **Leaflet** and **React Leaflet** for the interactive map.
+- **CSS** for the responsive layout, map styling, card animations, and mobile result-card flip behavior.
+- **Node test runner** with TypeScript compilation for utility tests.
+- **ESLint** for static linting.
+
+## Run Locally
 
 ```bash
 npm install
 npm run dev
+```
+
+Open the local URL printed by Vite.
+
+Useful commands:
+
+```bash
+npm test
+npm run lint
 npm run build
 ```
-
-The dev server is powered by Vite. Open the local URL printed by `npm run dev`.
-
-The game uses Leaflet with real world map tiles styled through CSS to fit the pencil-and-paper art direction. It does not use Google Maps.
-
-## Game Idea
-
-Each round chooses a random historical person from a local JSON seed dataset. The map shows:
-
-- an orange birth marker
-- a purple death marker
-- a dashed line connecting the two
-- birth and death dates and place names
-
-The player enters a name, submits it, and the game compares the guess case-insensitively against the hidden `name`. After submission, the answer is revealed and the player can start the next round.
-
-## Data Structure
-
-Seed data is in `src/data/historicalPeople.json` and follows this TypeScript shape:
-
-```ts
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
-
-interface HistoricalPerson {
-  id: string;
-  name: string;
-  birthDate: string;
-  deathDate: string;
-  birthPlace: string;
-  deathPlace: string;
-  birthCoordinates: Coordinates;
-  deathCoordinates: Coordinates;
-  fameScore?: number;
-  wikidataId?: string;
-}
-```
-
-The app validates records before using them. Malformed records are skipped and a small warning is shown.
-
-## Wikidata Strategy
-
-Wikidata is a good source for building the seed dataset because it has structured properties for people, dates, places, coordinates, and Wikidata IDs. The game should not query Wikidata live every round because live queries add latency, can fail offline, may hit rate limits, and make gameplay dependent on an external service.
-
-Instead, Wikidata should be used as a periodic data-build source. A maintainer can fetch candidates, clean names and coordinates, review quality, assign a game-friendly `fameScore`, then commit the resulting JSON. See `scripts/fetchWikidataSeed.mjs` for an example SPARQL fetch-and-clean script.
-
-## Future Improvements
-
-- Add alternate accepted names and aliases.
-- Add difficulty tiers based on fame score, distance, era, or region.
-- Add an offline map option using a curated Natural Earth GeoJSON file or packaged vector tiles.
-- Add scoring, streaks, and guess history.
-- Add accessibility improvements for keyboard-only map alternatives.
-- Add tests for data validation and guess matching.
