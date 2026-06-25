@@ -26,13 +26,17 @@ import type {
 import {
   createDailyShareText,
   dailyInitialChances,
+  type DailyCompletionRecord,
+  type DailyShareMode,
   getDailyDateKey,
   getDailyMissOutcome,
   getDailyPeople,
   getDailyResetCountdown,
   getDailyScore,
   getRemainingDailyHelperActions,
+  readDailyCompletion,
   readDailyLeaderboard,
+  saveDailyCompletion,
   saveDailyLeaderboardEntry,
 } from './utils/dailyChallenge';
 import { getDailyRulesItems } from './utils/dailyRules';
@@ -323,7 +327,7 @@ function App() {
     return () => window.clearInterval(countdownTimer);
   }, [dailyFinalStats, isDailyMode, isSessionComplete]);
 
-  const resetRoundState = (nextRevealedHints = initialRevealedHints) => {
+  const resetRoundState = useCallback((nextRevealedHints = initialRevealedHints) => {
     setGuess('');
     setSubmittedGuess('');
     setResult(null);
@@ -332,11 +336,50 @@ function App() {
     setChanceNotice(null);
     setRevealedHints({ ...nextRevealedHints });
     setRoundIntroStage('birth');
-  };
+  }, []);
 
-  const loadLeaderboard = () => {
+  const loadLeaderboard = useCallback(() => {
     setDailyLeaderboard(readDailyLeaderboard(window.localStorage, dailyDateKey));
-  };
+  }, [dailyDateKey]);
+
+  const restoreDailyCompletion = useCallback((completion: DailyCompletionRecord) => {
+    clearRevealTimer();
+    setUsername(completion.entry?.username ?? '');
+    setMode(completion.mode);
+    setPerson(null);
+    setUsedPersonIds([]);
+    setDailyRoundIndex(0);
+    setDailyCorrectGuesses(completion.correctGuesses);
+    setDailyChances(0);
+    setDailyUnusedHints(
+      completion.mode === 'easy-daily' ? { ...noDailyHelperActions } : { ...initialDailyUnusedHints },
+    );
+    setIsDailyGameOver(true);
+    setDailyEntry(completion.entry ?? null);
+    setDailyFinalStats({
+      score: completion.score,
+      correctGuesses: completion.correctGuesses,
+      remainingHelperActions: completion.remainingHelperActions,
+      completedAt: completion.completedAt,
+    });
+    setDailyEndReason(null);
+    setIsDailyRulesOpen(false);
+    setShareStatus(null);
+    setChanceNotice(null);
+    setIsSessionComplete(true);
+    setIsRevealLoading(false);
+    setIsPanelMinimized(false);
+    loadLeaderboard();
+    resetRoundState(completion.mode === 'easy-daily' ? allHintsRevealed : initialRevealedHints);
+  }, [clearRevealTimer, loadLeaderboard, resetRoundState]);
+
+  useEffect(() => {
+    const latestCompletion = readDailyCompletion(window.localStorage, dailyDateKey);
+
+    if (latestCompletion) {
+      restoreDailyCompletion(latestCompletion);
+    }
+  }, [dailyDateKey, restoreDailyCompletion]);
 
   const startPractice = () => {
     clearRevealTimer();
@@ -358,6 +401,13 @@ function App() {
 
   const startDaily = (nextMode: Extract<GameMode, 'daily' | 'easy-daily'> = 'daily') => {
     clearRevealTimer();
+    const existingCompletion = readDailyCompletion(window.localStorage, dailyDateKey);
+
+    if (existingCompletion) {
+      restoreDailyCompletion(existingCompletion);
+      return;
+    }
+
     const isEasyDaily = nextMode === 'easy-daily';
 
     setUsername('');
@@ -409,14 +459,25 @@ function App() {
   };
 
   const finishDaily = useCallback((reason: string | null) => {
+    const completionMode: DailyShareMode = isEasyDailyMode ? 'easy-daily' : 'daily';
     const remainingHelperActions = isEasyDailyMode
       ? 0
       : getRemainingDailyHelperActions(dailyUnusedHints);
-    setDailyFinalStats({
+    const finalStats = {
       score: getDailyScore(dailyCorrectGuesses, remainingHelperActions),
       correctGuesses: dailyCorrectGuesses,
       remainingHelperActions,
       completedAt: new Date().toISOString(),
+    };
+
+    saveDailyCompletion(window.localStorage, {
+      dateKey: dailyDateKey,
+      mode: completionMode,
+      ...finalStats,
+    });
+
+    setDailyFinalStats({
+      ...finalStats,
     });
     setDailyEntry(null);
     setShareStatus(null);
@@ -428,7 +489,7 @@ function App() {
     setResult(null);
     setIsRevealLoading(false);
     setIsPanelMinimized(false);
-  }, [dailyCorrectGuesses, dailyUnusedHints, isEasyDailyMode]);
+  }, [dailyCorrectGuesses, dailyDateKey, dailyUnusedHints, isEasyDailyMode]);
 
   const handleSaveDailyScore = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -447,6 +508,15 @@ function App() {
     };
 
     const nextLeaderboard = saveDailyLeaderboardEntry(window.localStorage, dailyDateKey, entry);
+    saveDailyCompletion(window.localStorage, {
+      dateKey: dailyDateKey,
+      mode: isEasyDailyMode ? 'easy-daily' : 'daily',
+      score: dailyFinalStats.score,
+      correctGuesses: dailyFinalStats.correctGuesses,
+      remainingHelperActions: dailyFinalStats.remainingHelperActions,
+      completedAt: dailyFinalStats.completedAt,
+      entry,
+    });
     setDailyEntry(entry);
     setDailyLeaderboard(nextLeaderboard);
     setUsername(entry.username);

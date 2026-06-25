@@ -1,13 +1,24 @@
-import type { DailyLeaderboardEntry, HistoricalPerson, HintKey } from '../types.js';
+import type { DailyLeaderboardEntry, GameMode, HistoricalPerson, HintKey } from '../types.js';
 import type { Language } from '../i18n.js';
 import { isObscurePerson } from './people.js';
 
-export type DailyShareMode = 'daily' | 'easy-daily';
+export type DailyShareMode = Extract<GameMode, 'daily' | 'easy-daily'>;
+
+export interface DailyCompletionRecord {
+  dateKey: string;
+  mode: DailyShareMode;
+  score: number;
+  correctGuesses: number;
+  remainingHelperActions: number;
+  completedAt: string;
+  entry?: DailyLeaderboardEntry;
+}
 
 export const dailyHelperBonusPoints = 2;
 export const dailyInitialChances = 1;
 
 const leaderboardKeyPrefix = 'trace-my-life-daily-leaderboard';
+const completionKeyPrefix = 'trace-my-life-daily-completion';
 
 const getSeedForDate = (dateKey: string): number => {
   let hash = 2166136261;
@@ -109,6 +120,7 @@ export const getDailyMissOutcome = (currentChances: number): DailyMissOutcome =>
 };
 
 const getLeaderboardKey = (dateKey: string): string => `${leaderboardKeyPrefix}-${dateKey}`;
+const getCompletionKey = (dateKey: string): string => `${completionKeyPrefix}-${dateKey}`;
 
 const isLeaderboardEntry = (value: unknown): value is DailyLeaderboardEntry => {
   if (!value || typeof value !== 'object') {
@@ -126,6 +138,27 @@ const isLeaderboardEntry = (value: unknown): value is DailyLeaderboardEntry => {
     typeof entry.remainingHelperActions === 'number' &&
     Number.isFinite(entry.remainingHelperActions) &&
     typeof entry.completedAt === 'string'
+  );
+};
+
+const isDailyCompletionRecord = (value: unknown): value is DailyCompletionRecord => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const record = value as Partial<DailyCompletionRecord>;
+  return (
+    record.dateKey !== undefined &&
+    typeof record.dateKey === 'string' &&
+    (record.mode === 'daily' || record.mode === 'easy-daily') &&
+    typeof record.score === 'number' &&
+    Number.isFinite(record.score) &&
+    typeof record.correctGuesses === 'number' &&
+    Number.isFinite(record.correctGuesses) &&
+    typeof record.remainingHelperActions === 'number' &&
+    Number.isFinite(record.remainingHelperActions) &&
+    typeof record.completedAt === 'string' &&
+    (record.entry === undefined || isLeaderboardEntry(record.entry))
   );
 };
 
@@ -156,6 +189,34 @@ export const readDailyLeaderboard = (
   } catch {
     return [];
   }
+};
+
+export const readDailyCompletion = (
+  storage: Pick<Storage, 'getItem'>,
+  dateKey: string,
+): DailyCompletionRecord | null => {
+  const rawRecord = storage.getItem(getCompletionKey(dateKey));
+
+  if (!rawRecord) {
+    return null;
+  }
+
+  try {
+    const parsedRecord = JSON.parse(rawRecord) as unknown;
+    return isDailyCompletionRecord(parsedRecord) && parsedRecord.dateKey === dateKey
+      ? parsedRecord
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+export const saveDailyCompletion = (
+  storage: Pick<Storage, 'setItem'>,
+  record: DailyCompletionRecord,
+): DailyCompletionRecord => {
+  storage.setItem(getCompletionKey(record.dateKey), JSON.stringify(record));
+  return record;
 };
 
 export const saveDailyLeaderboardEntry = (

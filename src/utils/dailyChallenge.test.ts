@@ -9,8 +9,10 @@ import {
   getNextDailyResetAt,
   getDailyScore,
   getRemainingDailyHelperActions,
+  readDailyCompletion,
   readDailyLeaderboard,
   saveDailyLeaderboardEntry,
+  saveDailyCompletion,
 } from './dailyChallenge.js';
 
 class MemoryStorage {
@@ -207,5 +209,56 @@ describe('daily challenge utilities', () => {
         'https://person-game-iota.vercel.app/',
       ].join('\n'),
     );
+  });
+
+  it('stores one daily completion record for the date', () => {
+    const storage = new MemoryStorage();
+    const completion = saveDailyCompletion(storage, {
+      dateKey: '2026-06-25',
+      mode: 'easy-daily',
+      score: 4,
+      correctGuesses: 4,
+      remainingHelperActions: 0,
+      completedAt: '2026-06-25T10:00:00.000Z',
+    });
+
+    assert.deepEqual(readDailyCompletion(storage, '2026-06-25'), completion);
+  });
+
+  it('replaces the daily completion record if another mode is saved for the same date', () => {
+    const storage = new MemoryStorage();
+    saveDailyCompletion(storage, {
+      dateKey: '2026-06-25',
+      mode: 'easy-daily',
+      score: 4,
+      correctGuesses: 4,
+      remainingHelperActions: 0,
+      completedAt: '2026-06-25T10:00:00.000Z',
+    });
+    const hardCompletion = saveDailyCompletion(storage, {
+      dateKey: '2026-06-25',
+      mode: 'daily',
+      score: 8,
+      correctGuesses: 4,
+      remainingHelperActions: 2,
+      completedAt: '2026-06-25T11:00:00.000Z',
+    });
+
+    assert.deepEqual(readDailyCompletion(storage, '2026-06-25'), hardCompletion);
+  });
+
+  it('ignores malformed and old completion records', () => {
+    const storage = new MemoryStorage();
+    storage.setItem('trace-my-life-daily-completion-2026-06-25', JSON.stringify({ bad: true }));
+    saveDailyCompletion(storage, {
+      dateKey: '2026-06-24',
+      mode: 'easy-daily',
+      score: 4,
+      correctGuesses: 4,
+      remainingHelperActions: 0,
+      completedAt: '2026-06-24T10:00:00.000Z',
+    });
+
+    assert.equal(readDailyCompletion(storage, '2026-06-25'), null);
   });
 });

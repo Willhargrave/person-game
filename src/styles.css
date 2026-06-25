@@ -1310,8 +1310,8 @@ button:disabled {
   }
 
   .ui-stack {
-    top: auto;
-    bottom: 8px;
+    top: max(8px, env(safe-area-inset-top));
+    bottom: auto;
     left: 12px;
     width: calc(100vw - 24px);
     gap: 10px;
@@ -1388,6 +1388,26 @@ button:disabled {
     min-height: 0;
   }
 
+  .result-mobile-copy {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .result-mobile-copy .result-card-name {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+  }
+
+  .result-mobile-facts {
+    width: 100%;
+    text-align: left;
+  }
+
+  .result-mobile-summary {
+    text-align: left;
+  }
+
   .result-next-button,
   .result-title-row {
     display: none;
@@ -1403,8 +1423,8 @@ button:disabled {
   }
 
   .suggestions {
-    top: auto;
-    bottom: calc(100% + 6px);
+    top: calc(100% + 6px);
+    bottom: auto;
     max-height: min(42vh, 260px);
     overflow-y: auto;
     overscroll-behavior: contain;
