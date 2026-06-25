@@ -1299,7 +1299,9 @@ button:disabled {
 
   .result-panel {
     height: min(84dvh, 700px);
-    grid-template-rows: auto auto minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
 
   .result-title-row {
@@ -1316,7 +1318,7 @@ button:disabled {
 
   .result-mobile-shell {
     display: block;
-    height: 100%;
+    flex: 1 1 auto;
     min-height: 0;
   }
 
