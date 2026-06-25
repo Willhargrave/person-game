@@ -94,8 +94,8 @@ const uiCopy: Record<Language, UiCopy> = {
   en: {
     appTitle: 'Trace My Life',
     tagline: 'Uncover famous people based on their birth and death',
-    daily: 'Daily',
-    easyDaily: 'Easy Daily',
+    daily: 'Daily (hard mode)',
+    easyDaily: 'Daily',
     practice: 'Practice',
     chooseGameMode: 'Choose game mode',
     sourcePrefix: 'All data sourced from',
@@ -180,8 +180,8 @@ const uiCopy: Record<Language, UiCopy> = {
   ja: {
     appTitle: 'Trace My Life',
     tagline: '生没地を手がかりに有名人を見つけよう',
-    daily: 'デイリー',
-    easyDaily: 'かんたんデイリー',
+    daily: 'デイリー（ハード）',
+    easyDaily: 'デイリー',
     practice: '練習',
     chooseGameMode: 'ゲームモードを選択',
     sourcePrefix: 'データ出典:',

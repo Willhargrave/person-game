@@ -1059,6 +1059,14 @@ button:disabled {
   gap: 10px;
 }
 
+.mode-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mode-actions > button:last-child {
+  grid-column: 1 / -1;
+}
+
 .language-toggle {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1246,7 +1254,7 @@ button:disabled {
 
   .ui-stack {
     top: auto;
-    bottom: 14px;
+    bottom: 8px;
     left: 12px;
     width: calc(100vw - 24px);
     gap: 10px;
@@ -1293,6 +1301,7 @@ button:disabled {
 
   .result-panel {
     height: min(84dvh, 700px);
+    margin-bottom: 8px;
     display: flex;
     flex-direction: column;
     gap: 14px;

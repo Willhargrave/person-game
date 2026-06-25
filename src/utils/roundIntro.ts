@@ -26,6 +26,16 @@ export const roundIntroSteps: RoundIntroStep[] = [
 
 export const isRoundIntroReady = (stage: RoundIntroStage): boolean => stage === 'ready';
 
+export const getNextRoundIntroStage = (stage: RoundIntroStage): RoundIntroStage => {
+  const currentIndex = roundIntroSteps.findIndex((step) => step.stage === stage);
+
+  if (currentIndex < 0) {
+    return 'ready';
+  }
+
+  return roundIntroSteps[currentIndex + 1]?.stage ?? 'ready';
+};
+
 export const getRoutePointAtProgress = (
   startPoint: RoutePoint,
   endPoint: RoutePoint,

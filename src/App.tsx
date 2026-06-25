@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, PointerEvent } from 'react';
 import { GameMap } from './components/GameMap';
 import { DailyRulesCard } from './components/DailyRulesCard';
 import { GuessPanel } from './components/GuessPanel';
@@ -37,6 +37,7 @@ import { getDailyRulesItems } from './utils/dailyRules';
 import { getValidPeople, isCorrectGuess, pickRandomPerson } from './utils/people';
 import {
   isRoundIntroReady,
+  getNextRoundIntroStage,
   roundIntroSteps,
   type RoundIntroStage,
 } from './utils/roundIntro';
@@ -188,10 +189,50 @@ function App() {
     [language],
   );
 
+  const clearRevealTimer = useCallback(() => {
+    if (revealTimerRef.current) {
+      window.clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
+  }, []);
+
   const setLanguage = (nextLanguage: Language) => {
     setLanguageState(nextLanguage);
     window.localStorage.setItem(languageStorageKey, nextLanguage);
   };
+
+  const handleAdvanceRoundIntro = useCallback(
+    (event: PointerEvent<HTMLElement>) => {
+      if (
+        !person ||
+        result ||
+        isSessionComplete ||
+        isDailyRulesOpen ||
+        isRoundReady ||
+        isRevealLoading
+      ) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+
+      if (target?.closest('button, a, input, textarea, select, label, [role="button"]')) {
+        return;
+      }
+
+      clearRevealTimer();
+      setRoundIntroStage((currentStage) => getNextRoundIntroStage(currentStage));
+    },
+    [
+      clearRevealTimer,
+      isDailyRulesOpen,
+      isRevealLoading,
+      isRoundReady,
+      isSessionComplete,
+      person,
+      result,
+    ],
+  );
 
   useEffect(
     () => () => {
@@ -244,13 +285,6 @@ function App() {
       }
     };
   }, [isDailyRulesOpen, isSessionComplete, person, result]);
-
-  const clearRevealTimer = () => {
-    if (revealTimerRef.current) {
-      window.clearTimeout(revealTimerRef.current);
-      revealTimerRef.current = null;
-    }
-  };
 
   const resetRoundState = (nextRevealedHints = initialRevealedHints) => {
     setGuess('');
@@ -512,11 +546,11 @@ function App() {
         </div>
         <section className="mode-panel" aria-label={copy.chooseGameMode}>
           <div className="mode-actions">
-            <button type="button" onClick={() => startDaily()}>
-              {copy.daily}
-            </button>
             <button type="button" onClick={() => startDaily('easy-daily')}>
               {copy.easyDaily}
+            </button>
+            <button type="button" onClick={() => startDaily()}>
+              {copy.daily}
             </button>
             <button type="button" onClick={startPractice}>
               {copy.practice}
@@ -671,7 +705,7 @@ function App() {
   const localizedPerson = currentLocalizedPerson ?? getLocalizedPerson(person, language);
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" onPointerDownCapture={handleAdvanceRoundIntro}>
       <GameMap
         person={person}
         localizedPerson={localizedPerson}

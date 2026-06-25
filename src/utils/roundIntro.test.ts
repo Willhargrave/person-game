@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  getNextRoundIntroStage,
   getRoutePointAtProgress,
   isRoundIntroReady,
   roundIntroDeathHoldMs,
@@ -25,6 +26,15 @@ describe('round intro sequence', () => {
     assert.equal(isRoundIntroReady('overview'), false);
     assert.equal(isRoundIntroReady('settle'), false);
     assert.equal(isRoundIntroReady('ready'), true);
+  });
+
+  it('advances through the intro stages in order', () => {
+    assert.equal(getNextRoundIntroStage('birth'), 'route');
+    assert.equal(getNextRoundIntroStage('route'), 'death');
+    assert.equal(getNextRoundIntroStage('death'), 'overview');
+    assert.equal(getNextRoundIntroStage('overview'), 'settle');
+    assert.equal(getNextRoundIntroStage('settle'), 'ready');
+    assert.equal(getNextRoundIntroStage('ready'), 'ready');
   });
 
   it('leaves enough time between each reveal', () => {

@@ -35,9 +35,9 @@ describe('i18n helpers', () => {
   });
 
   it('returns UI copy for English and Japanese', () => {
-    assert.equal(getUiCopy('en').daily, 'Daily');
+    assert.equal(getUiCopy('en').daily, 'Daily (hard mode)');
     assert.equal(getUiCopy('en').viewSummary, 'View summary');
-    assert.equal(getUiCopy('ja').daily, 'デイリー');
+    assert.equal(getUiCopy('ja').daily, 'デイリー（ハード）');
     assert.equal(getUiCopy('ja').backToCard, 'カードに戻る');
   });
 
