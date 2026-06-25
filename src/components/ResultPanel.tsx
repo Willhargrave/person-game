@@ -220,6 +220,13 @@ export function ResultPanel({
       <div className="result-mobile-shell">
         <div className={mobileCardClassName}>
           <section className="result-mobile-face result-mobile-front" aria-hidden={isMobileSummaryVisible}>
+            <button
+              className="secondary-button result-mobile-next-button"
+              type="button"
+              onClick={onNextRound}
+            >
+              {nextRoundLabel}
+            </button>
             {summary?.imageUrl ? (
               <img className="person-image result-mobile-image" src={summary.imageUrl} alt={localizedPerson.name} />
             ) : null}
