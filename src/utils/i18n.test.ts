@@ -106,5 +106,18 @@ describe('i18n helpers', () => {
       gender: '男性',
       profession: '政治家',
     });
+
+    assert.equal(
+      getLocalizedClueHints({ ...hints, profession: 'Actor' }, 'en').profession,
+      'Actor',
+    );
+    assert.equal(
+      getLocalizedClueHints({ ...hints, profession: 'Singer' }, 'en').profession,
+      'Musician',
+    );
+    assert.equal(
+      getLocalizedClueHints({ ...hints, profession: 'Actor' }, 'ja').profession,
+      '俳優',
+    );
   });
 });

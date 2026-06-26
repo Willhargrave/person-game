@@ -22,6 +22,14 @@ describe('profession categories', () => {
     assert.equal(getProfessionCategory('Revolutionary'), 'revolutionary');
   });
 
+  it('splits performers into actor and musician categories', () => {
+    assert.equal(getProfessionCategory('Actor'), 'actor');
+    assert.equal(getProfessionCategory('Musician'), 'musician');
+    assert.equal(getProfessionCategory('Singer'), 'musician');
+    assert.equal(getProfessionCategory('Rapper'), 'musician');
+    assert.equal(getProfessionCategory('Composer'), 'musician');
+  });
+
   it('supports person-specific politician overrides', () => {
     assert.equal(getProfessionCategory('Activist', 'mahatma-gandhi'), 'politician');
     assert.equal(getProfessionCategory('Revolutionary', 'che-guevara'), 'politician');

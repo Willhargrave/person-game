@@ -62,7 +62,7 @@ The app uses:
 
 - **Wikidata** as the source for structured person data.
 - **Wikipedia** for result-card profile summaries and images.
-- A local profession-category mapper so in-game profession clues can be broad, such as `Politician`, `Entertainer`, or `Scientist`, without exposing overly specific occupations.
+- A local profession-category mapper so in-game profession clues can be broad, such as `Politician`, `Actor`, `Musician`, or `Scientist`, without exposing overly specific occupations.
 
 The app validates seed records before use and skips malformed entries.
 

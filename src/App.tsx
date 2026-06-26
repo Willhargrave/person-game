@@ -17,6 +17,7 @@ import {
 } from './i18n';
 import type {
   DailyLeaderboardEntry,
+  DailyRoundResult,
   GameMode,
   GuessResult,
   HintKey,
@@ -50,6 +51,7 @@ import {
   fetchLocalizedPlaceLabels,
   type LocalizedPlaceLabels,
 } from './utils/wikidataPlaces';
+import { preloadPersonImage } from './utils/wikipediaSummary';
 import {
   isRoundIntroReady,
   getNextRoundIntroStage,
@@ -130,6 +132,7 @@ interface DailyFinalStats {
   correctGuesses: number;
   remainingHelperActions: number;
   completedAt: string;
+  roundResults: DailyRoundResult[];
 }
 
 function App() {
@@ -157,6 +160,7 @@ function App() {
   const [arcadeChances, setArcadeChances] = useState(arcadeInitialChances);
   const [isArcadeGameOver, setIsArcadeGameOver] = useState(false);
   const [dailyCorrectGuesses, setDailyCorrectGuesses] = useState(0);
+  const [dailyRoundResults, setDailyRoundResults] = useState<DailyRoundResult[]>([]);
   const [dailyChances, setDailyChances] = useState(dailyInitialChances);
   const [dailyUnusedHints, setDailyUnusedHints] = useState<RevealedHints>(initialDailyUnusedHints);
   const [isDailyGameOver, setIsDailyGameOver] = useState(false);
@@ -185,6 +189,7 @@ function App() {
   const currentLocalizedPerson = person
     ? getLocalizedPerson(person, language, localizedPlaceLabels)
     : null;
+  const currentWikipediaTitle = currentLocalizedPerson?.wikipediaTitle;
   const revealedHintCount = Object.values(revealedHints).filter(Boolean).length;
   const isDailyMode = mode === 'daily' || mode === 'easy-daily';
   const isEasyDailyMode = mode === 'easy-daily';
@@ -217,6 +222,7 @@ function App() {
         correctGuesses: dailyFinalStats.correctGuesses,
         remainingHelperActions: dailyFinalStats.remainingHelperActions,
         completedAt: dailyFinalStats.completedAt,
+        roundResults: dailyFinalStats.roundResults,
       }
     : null;
   const dailyLeaderboardPreview =
@@ -274,6 +280,33 @@ function App() {
 
     return () => controller.abort();
   }, [language, person]);
+
+  useEffect(() => {
+    if (!person || !currentWikipediaTitle || result || isSessionComplete) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    void preloadPersonImage(
+      person,
+      currentWikipediaTitle,
+      language,
+      controller.signal,
+    ).catch((error) => {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+    });
+
+    return () => controller.abort();
+  }, [
+    currentWikipediaTitle,
+    isSessionComplete,
+    language,
+    person,
+    result,
+  ]);
 
   const handleAdvanceRoundIntro = useCallback(
     (event: PointerEvent<HTMLElement>) => {
@@ -396,6 +429,7 @@ function App() {
     setUsedPersonIds([]);
     setDailyRoundIndex(0);
     setDailyCorrectGuesses(completion.correctGuesses);
+    setDailyRoundResults(completion.roundResults ?? []);
     setDailyChances(0);
     setDailyUnusedHints(
       completion.mode === 'easy-daily' ? { ...noDailyHelperActions } : { ...initialDailyUnusedHints },
@@ -407,6 +441,7 @@ function App() {
       correctGuesses: completion.correctGuesses,
       remainingHelperActions: completion.remainingHelperActions,
       completedAt: completion.completedAt,
+      roundResults: completion.roundResults ?? [],
     });
     setDailyEndReason(null);
     setIsDailyRulesOpen(false);
@@ -466,6 +501,7 @@ function App() {
     setUsedPersonIds([]);
     setDailyRoundIndex(0);
     setDailyCorrectGuesses(0);
+    setDailyRoundResults([]);
     setDailyChances(dailyInitialChances);
     setDailyUnusedHints(
       isEasyDaily ? { ...noDailyHelperActions } : { ...initialDailyUnusedHints },
@@ -489,6 +525,7 @@ function App() {
     setMode(null);
     setPerson(null);
     setIsSessionComplete(false);
+    setDailyRoundResults([]);
     setDailyEntry(null);
     setDailyFinalStats(null);
     setDailyEndReason(null);
@@ -523,6 +560,7 @@ function App() {
       correctGuesses: dailyCorrectGuesses,
       remainingHelperActions,
       completedAt: new Date().toISOString(),
+      roundResults: dailyRoundResults,
     };
 
     saveDailyCompletion(window.localStorage, {
@@ -544,7 +582,13 @@ function App() {
     setResult(null);
     setIsRevealLoading(false);
     setIsPanelMinimized(false);
-  }, [dailyCorrectGuesses, dailyDateKey, dailyUnusedHints, isEasyDailyMode]);
+  }, [
+    dailyCorrectGuesses,
+    dailyDateKey,
+    dailyRoundResults,
+    dailyUnusedHints,
+    isEasyDailyMode,
+  ]);
 
   const handleSaveDailyScore = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -560,6 +604,7 @@ function App() {
       correctGuesses: dailyFinalStats.correctGuesses,
       remainingHelperActions: dailyFinalStats.remainingHelperActions,
       completedAt: dailyFinalStats.completedAt,
+      roundResults: dailyFinalStats.roundResults,
     };
 
     const nextLeaderboard = saveDailyLeaderboardEntry(window.localStorage, dailyDateKey, entry);
@@ -570,6 +615,7 @@ function App() {
       correctGuesses: dailyFinalStats.correctGuesses,
       remainingHelperActions: dailyFinalStats.remainingHelperActions,
       completedAt: dailyFinalStats.completedAt,
+      roundResults: dailyFinalStats.roundResults,
       entry,
     });
     setDailyEntry(entry);
@@ -611,7 +657,9 @@ function App() {
     if (isDailyMode) {
       if (nextResult === 'correct') {
         setDailyCorrectGuesses((currentScore) => currentScore + 1);
+        setDailyRoundResults((currentResults) => [...currentResults, 'correct']);
       } else {
+        setDailyRoundResults((currentResults) => [...currentResults, 'missed']);
         const missOutcome = getDailyMissOutcome(dailyChances);
         setDailyChances(missOutcome.remainingChances);
         setIsDailyGameOver(missOutcome.isGameOver);
@@ -647,6 +695,7 @@ function App() {
     revealResult('incorrect', '__SKIPPED__');
 
     if (isDailyMode) {
+      setDailyRoundResults((currentResults) => [...currentResults, 'missed']);
       const missOutcome = getDailyMissOutcome(dailyChances);
       setDailyChances(missOutcome.remainingChances);
       setIsDailyGameOver(missOutcome.isGameOver);

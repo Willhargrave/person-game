@@ -24,7 +24,8 @@ export type ProfessionCategory =
   | 'politician'
   | 'explorer'
   | 'religious-figure'
-  | 'entertainer'
+  | 'actor'
+  | 'musician'
   | 'sportsperson'
   | 'writer'
   | 'philosopher'
@@ -48,6 +49,8 @@ export type RevealedHints = Record<HintKey, boolean>;
 
 export type GameMode = 'arcade' | 'daily' | 'easy-daily';
 
+export type DailyRoundResult = 'correct' | 'missed';
+
 export interface DailyLeaderboardEntry {
   id: string;
   username: string;
@@ -55,4 +58,5 @@ export interface DailyLeaderboardEntry {
   correctGuesses: number;
   remainingHelperActions: number;
   completedAt: string;
+  roundResults?: DailyRoundResult[];
 }

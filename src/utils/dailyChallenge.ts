@@ -1,4 +1,10 @@
-import type { DailyLeaderboardEntry, GameMode, HistoricalPerson, HintKey } from '../types.js';
+import type {
+  DailyLeaderboardEntry,
+  DailyRoundResult,
+  GameMode,
+  HistoricalPerson,
+  HintKey,
+} from '../types.js';
 import type { Language } from '../i18n.js';
 import { isObscurePerson } from './people.js';
 
@@ -11,6 +17,7 @@ export interface DailyCompletionRecord {
   correctGuesses: number;
   remainingHelperActions: number;
   completedAt: string;
+  roundResults?: DailyRoundResult[];
   entry?: DailyLeaderboardEntry;
 }
 
@@ -137,7 +144,10 @@ const isLeaderboardEntry = (value: unknown): value is DailyLeaderboardEntry => {
     Number.isFinite(entry.correctGuesses) &&
     typeof entry.remainingHelperActions === 'number' &&
     Number.isFinite(entry.remainingHelperActions) &&
-    typeof entry.completedAt === 'string'
+    typeof entry.completedAt === 'string' &&
+    (entry.roundResults === undefined ||
+      (Array.isArray(entry.roundResults) &&
+        entry.roundResults.every((result) => result === 'correct' || result === 'missed')))
   );
 };
 
@@ -158,6 +168,9 @@ const isDailyCompletionRecord = (value: unknown): value is DailyCompletionRecord
     typeof record.remainingHelperActions === 'number' &&
     Number.isFinite(record.remainingHelperActions) &&
     typeof record.completedAt === 'string' &&
+    (record.roundResults === undefined ||
+      (Array.isArray(record.roundResults) &&
+        record.roundResults.every((result) => result === 'correct' || result === 'missed'))) &&
     (record.entry === undefined || isLeaderboardEntry(record.entry))
   );
 };
@@ -244,18 +257,25 @@ export const createDailyShareText = (
   siteUrl: string,
   language: Language = 'en',
   mode: DailyShareMode = 'daily',
-): string =>
-  [
+): string => {
+  const resultGrid = entry.roundResults
+    ?.map((roundResult) => (roundResult === 'correct' ? '🟩' : '🟥'))
+    .join('');
+
+  return [
     ...(language === 'ja'
       ? [
         `Trace My Life デイリー ${dateKey}`,
         `スコア: ${entry.score}`,
+        ...(resultGrid ? [resultGrid] : []),
         ...(mode === 'easy-daily' ? [] : [`正解数: ${entry.correctGuesses}`]),
       ]
       : [
         `Trace My Life Daily ${dateKey}`,
         `Score: ${entry.score}`,
+        ...(resultGrid ? [resultGrid] : []),
         ...(mode === 'easy-daily' ? [] : [`Correct People: ${entry.correctGuesses}`]),
       ]),
     siteUrl,
   ].join('\n');
+};

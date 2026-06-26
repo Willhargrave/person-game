@@ -48,6 +48,7 @@ export interface PersonSummary {
 }
 
 const wikidataProfileCache = new Map<string, WikidataProfile>();
+const wikipediaSummaryCache = new Map<string, PersonSummary>();
 
 const getSummaryUrl = (title: string, language: Language) =>
   `https://${language === 'ja' ? 'ja' : 'en'}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
@@ -99,6 +100,22 @@ const fetchWikipediaSummary = async (
   candidate: SummaryCandidate,
   signal: AbortSignal,
 ): Promise<PersonSummary> => {
+  const cacheKey = `${candidate.language}:${candidate.title}`;
+  const cachedSummary = wikipediaSummaryCache.get(cacheKey);
+
+  if (cachedSummary) {
+    return cachedSummary;
+  }
+
+  const summary = await loadWikipediaSummary(candidate, signal);
+  wikipediaSummaryCache.set(cacheKey, summary);
+  return summary;
+};
+
+const loadWikipediaSummary = async (
+  candidate: SummaryCandidate,
+  signal: AbortSignal,
+): Promise<PersonSummary> => {
   const response = await fetch(getSummaryUrl(candidate.title, candidate.language), {
     signal,
     headers: {
@@ -129,6 +146,32 @@ const fetchWikipediaSummary = async (
   }
 
   return summary;
+};
+
+const preloadImageUrl = (imageUrl: string, signal: AbortSignal): Promise<void> => {
+  if (typeof Image === 'undefined') {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve();
+      return;
+    }
+
+    const image = new Image();
+    const cleanup = () => {
+      image.onload = null;
+      image.onerror = null;
+      signal.removeEventListener('abort', cleanup);
+      resolve();
+    };
+
+    image.onload = cleanup;
+    image.onerror = cleanup;
+    signal.addEventListener('abort', cleanup, { once: true });
+    image.src = imageUrl;
+  });
 };
 
 const getFallbackCandidates = (
@@ -210,6 +253,22 @@ export const fetchPersonSummary = async (
   throw new Error('Summary unavailable');
 };
 
+export const preloadPersonImage = async (
+  person: HistoricalPerson,
+  fallbackTitle: string,
+  language: Language,
+  signal: AbortSignal,
+): Promise<void> => {
+  const summary = await fetchPersonSummary(person, fallbackTitle, language, signal);
+
+  if (!summary.imageUrl || signal.aborted) {
+    return;
+  }
+
+  await preloadImageUrl(summary.imageUrl, signal);
+};
+
 export const clearSitelinkCacheForTests = () => {
   wikidataProfileCache.clear();
+  wikipediaSummaryCache.clear();
 };

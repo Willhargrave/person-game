@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 import type { HistoricalPerson } from '../types.js';
-import { clearSitelinkCacheForTests, fetchPersonSummary } from './wikipediaSummary.js';
+import {
+  clearSitelinkCacheForTests,
+  fetchPersonSummary,
+  preloadPersonImage,
+} from './wikipediaSummary.js';
 
 const person: HistoricalPerson = {
   id: 'test-person',
@@ -147,6 +151,51 @@ describe('wikipedia summary lookup', () => {
         },
       );
     } finally {
+      fetchMock.restore();
+    }
+  });
+
+  it('preloads the preferred image and reuses the cached summary', async () => {
+    const imageSources: string[] = [];
+    const originalImage = globalThis.Image;
+    globalThis.Image = class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+
+      set src(value: string) {
+        imageSources.push(value);
+        queueMicrotask(() => this.onload?.());
+      }
+    } as typeof Image;
+
+    const fetchMock = mockFetch((url) => {
+      if (url.includes('wikidata.org')) {
+        return createResponse(
+          true,
+          wikidataBody({ enwiki: { title: 'English Article' } }, 'Person portrait.jpg'),
+        );
+      }
+
+      assert.equal(url.includes('en.wikipedia.org'), true);
+      return createResponse(true, summaryBody('English summary', 'https://image.test/page.jpg'));
+    });
+
+    try {
+      await preloadPersonImage(person, 'Fallback Title', 'en', new AbortController().signal);
+      const summary = await fetchPersonSummary(
+        person,
+        'Fallback Title',
+        'en',
+        new AbortController().signal,
+      );
+
+      assert.deepEqual(imageSources, [
+        'https://commons.wikimedia.org/wiki/Special:FilePath/Person%20portrait.jpg?width=640',
+      ]);
+      assert.equal(summary.imageUrl, imageSources[0]);
+      assert.equal(fetchMock.calls.length, 2);
+    } finally {
+      globalThis.Image = originalImage;
       fetchMock.restore();
     }
   });

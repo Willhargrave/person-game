@@ -74,6 +74,7 @@ const makeEntry = (
   id: string,
   score: number,
   completedAt: string,
+  roundResults: DailyLeaderboardEntry['roundResults'] = ['correct', 'correct', 'missed'],
 ): DailyLeaderboardEntry => ({
   id,
   username: id,
@@ -81,6 +82,7 @@ const makeEntry = (
   correctGuesses: score,
   remainingHelperActions: 0,
   completedAt,
+  roundResults,
 });
 
 describe('daily challenge utilities', () => {
@@ -170,6 +172,7 @@ describe('daily challenge utilities', () => {
       [
         'Trace My Life Daily 2026-06-23',
         'Score: 7',
+        '🟩🟩🟥',
         'Correct People: 7',
         'https://person-game-iota.vercel.app/',
       ].join('\n'),
@@ -186,6 +189,7 @@ describe('daily challenge utilities', () => {
       [
         'Trace My Life デイリー 2026-06-23',
         'スコア: 7',
+        '🟩🟩🟥',
         '正解数: 7',
         'https://person-game-iota.vercel.app/',
       ].join('\n'),
@@ -194,6 +198,27 @@ describe('daily challenge utilities', () => {
 
   it('produces shorter easy daily share text without correct people', () => {
     const entry = makeEntry('player', 7, '2026-06-25T10:00:00.000Z');
+
+    assert.equal(
+      createDailyShareText(
+        entry,
+        '2026-06-25',
+        'https://person-game-iota.vercel.app/',
+        'en',
+        'easy-daily',
+      ),
+      [
+        'Trace My Life Daily 2026-06-25',
+        'Score: 7',
+        '🟩🟩🟥',
+        'https://person-game-iota.vercel.app/',
+      ].join('\n'),
+    );
+  });
+
+  it('keeps old share text shape when no round results were stored', () => {
+    const entry = makeEntry('player', 7, '2026-06-25T10:00:00.000Z');
+    delete entry.roundResults;
 
     assert.equal(
       createDailyShareText(
