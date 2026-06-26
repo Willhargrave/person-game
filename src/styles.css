@@ -1362,7 +1362,7 @@ button:disabled {
   }
 
   .result-panel {
-    height: min(84dvh, 700px);
+    height: calc(100dvh - 24px - env(safe-area-inset-top));
     margin-bottom: 8px;
     display: flex;
     flex-direction: column;
@@ -1388,9 +1388,20 @@ button:disabled {
     min-height: 0;
   }
 
+  .result-mobile-front {
+    align-items: center;
+    overflow: hidden;
+  }
+
   .result-mobile-copy {
+    flex: 1 1 auto;
     justify-items: center;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
     text-align: center;
+    width: 100%;
   }
 
   .result-mobile-copy .result-card-name {
@@ -1414,8 +1425,15 @@ button:disabled {
   }
 
   .person-image {
+    display: block;
     width: min(260px, 100%);
+    align-self: center;
     justify-self: center;
+  }
+
+  .result-mobile-next-button,
+  .result-mobile-flip-button {
+    width: 100%;
   }
 
   .guess-row {
