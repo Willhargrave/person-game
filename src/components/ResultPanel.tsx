@@ -134,13 +134,11 @@ export function ResultPanel({
         {nextRoundLabel}
       </button>
       <div className="result-title-row">
-        {summary?.imageUrl ? (
-          <img
-            className="person-image result-card-reveal result-card-photo"
-            src={summary.imageUrl}
-            alt={localizedPerson.name}
-          />
-        ) : null}
+        <div className="result-image-frame result-card-reveal result-card-photo" aria-hidden={!summary?.imageUrl}>
+          {summary?.imageUrl ? (
+            <img className="person-image" src={summary.imageUrl} alt={localizedPerson.name} />
+          ) : null}
+        </div>
         <div className="result-title-copy">
           <div className="result-card-reveal result-card-name">
             <h2>{localizedPerson.name}</h2>
@@ -203,13 +201,14 @@ export function ResultPanel({
             >
               {nextRoundLabel}
             </button>
-            {summary?.imageUrl ? (
-              <img
-                className="person-image result-mobile-image result-card-reveal result-card-photo"
-                src={summary.imageUrl}
-                alt={localizedPerson.name}
-              />
-            ) : null}
+            <div
+              className="result-image-frame result-mobile-image result-card-reveal result-card-photo"
+              aria-hidden={!summary?.imageUrl}
+            >
+              {summary?.imageUrl ? (
+                <img className="person-image" src={summary.imageUrl} alt={localizedPerson.name} />
+              ) : null}
+            </div>
             <div className="result-mobile-copy">
               <div className="result-card-reveal result-card-name">
                 <h2>{localizedPerson.name}</h2>

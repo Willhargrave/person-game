@@ -17,9 +17,23 @@ interface WikidataEntityResponse {
   entities?: Record<
     string,
     {
+      claims?: {
+        P18?: Array<{
+          mainsnak?: {
+            datavalue?: {
+              value?: string;
+            };
+          };
+        }>;
+      };
       sitelinks?: Partial<Record<'enwiki' | 'jawiki', { title?: string }>>;
     }
   >;
+}
+
+interface WikidataProfile {
+  imageUrl?: string;
+  sitelinks: Partial<Record<'enwiki' | 'jawiki', string>>;
 }
 
 interface SummaryCandidate {
@@ -33,7 +47,7 @@ export interface PersonSummary {
   pageUrl?: string;
 }
 
-const sitelinkCache = new Map<string, Partial<Record<'enwiki' | 'jawiki', string>>>();
+const wikidataProfileCache = new Map<string, WikidataProfile>();
 
 const getSummaryUrl = (title: string, language: Language) =>
   `https://${language === 'ja' ? 'ja' : 'en'}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
@@ -41,14 +55,17 @@ const getSummaryUrl = (title: string, language: Language) =>
 const getWikidataEntityUrl = (wikidataId: string) =>
   `https://www.wikidata.org/wiki/Special:EntityData/${encodeURIComponent(wikidataId)}.json`;
 
-const fetchWikidataSitelinks = async (
+const getCommonsImageUrl = (filename: string) =>
+  `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=640`;
+
+const fetchWikidataProfile = async (
   wikidataId: string,
   signal: AbortSignal,
-): Promise<Partial<Record<'enwiki' | 'jawiki', string>>> => {
-  const cachedSitelinks = sitelinkCache.get(wikidataId);
+): Promise<WikidataProfile> => {
+  const cachedProfile = wikidataProfileCache.get(wikidataId);
 
-  if (cachedSitelinks) {
-    return cachedSitelinks;
+  if (cachedProfile) {
+    return cachedProfile;
   }
 
   const response = await fetch(getWikidataEntityUrl(wikidataId), {
@@ -64,13 +81,18 @@ const fetchWikidataSitelinks = async (
 
   const data = (await response.json()) as WikidataEntityResponse;
   const entity = data.entities?.[wikidataId];
+  const imageFilename = entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
   const sitelinks = {
     enwiki: entity?.sitelinks?.enwiki?.title,
     jawiki: entity?.sitelinks?.jawiki?.title,
   };
+  const profile = {
+    imageUrl: imageFilename ? getCommonsImageUrl(imageFilename) : undefined,
+    sitelinks,
+  };
 
-  sitelinkCache.set(wikidataId, sitelinks);
-  return sitelinks;
+  wikidataProfileCache.set(wikidataId, profile);
+  return profile;
 };
 
 const fetchWikipediaSummary = async (
@@ -129,10 +151,14 @@ export const fetchPersonSummary = async (
   signal: AbortSignal,
 ): Promise<PersonSummary> => {
   const candidates: SummaryCandidate[] = [];
+  let wikidataImageUrl: string | undefined;
 
   if (person.wikidataId) {
     try {
-      const sitelinks = await fetchWikidataSitelinks(person.wikidataId, signal);
+      const wikidataProfile = await fetchWikidataProfile(person.wikidataId, signal);
+      const { sitelinks } = wikidataProfile;
+
+      wikidataImageUrl = wikidataProfile.imageUrl;
 
       if (language === 'ja') {
         if (sitelinks.jawiki) {
@@ -164,7 +190,16 @@ export const fetchPersonSummary = async (
 
   for (const candidate of uniqueCandidates) {
     try {
-      return await fetchWikipediaSummary(candidate, signal);
+      const summary = await fetchWikipediaSummary(candidate, signal);
+
+      if (wikidataImageUrl) {
+        return {
+          ...summary,
+          imageUrl: wikidataImageUrl,
+        };
+      }
+
+      return summary;
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         throw error;
@@ -176,5 +211,5 @@ export const fetchPersonSummary = async (
 };
 
 export const clearSitelinkCacheForTests = () => {
-  sitelinkCache.clear();
+  wikidataProfileCache.clear();
 };

@@ -21,9 +21,22 @@ const createResponse = (ok: boolean, body: unknown): Response =>
     json: async () => body,
   }) as Response;
 
-const wikidataBody = (sitelinks: Record<string, { title: string }>) => ({
+const wikidataBody = (sitelinks: Record<string, { title: string }>, imageFilename?: string) => ({
   entities: {
     Q1: {
+      claims: imageFilename
+        ? {
+            P18: [
+              {
+                mainsnak: {
+                  datavalue: {
+                    value: imageFilename,
+                  },
+                },
+              },
+            ],
+          }
+        : undefined,
       sitelinks,
     },
   },
@@ -79,6 +92,58 @@ describe('wikipedia summary lookup', () => {
           extract: '日本語の概要',
           imageUrl: 'https://image.test/ja.jpg',
           pageUrl: 'https://example.test/%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E6%A6%82%E8%A6%81',
+        },
+      );
+    } finally {
+      fetchMock.restore();
+    }
+  });
+
+  it('prefers a Wikidata image over the Wikipedia summary thumbnail', async () => {
+    const fetchMock = mockFetch((url) => {
+      if (url.includes('wikidata.org')) {
+        return createResponse(
+          true,
+          wikidataBody({ enwiki: { title: 'English Article' } }, 'Person portrait.jpg'),
+        );
+      }
+
+      assert.equal(url.includes('en.wikipedia.org'), true);
+      return createResponse(true, summaryBody('English summary', 'https://image.test/page.jpg'));
+    });
+
+    try {
+      assert.deepEqual(
+        await fetchPersonSummary(person, 'Fallback Title', 'en', new AbortController().signal),
+        {
+          extract: 'English summary',
+          imageUrl:
+            'https://commons.wikimedia.org/wiki/Special:FilePath/Person%20portrait.jpg?width=640',
+          pageUrl: 'https://example.test/English%20summary',
+        },
+      );
+    } finally {
+      fetchMock.restore();
+    }
+  });
+
+  it('uses the Wikipedia summary thumbnail when Wikidata has no image', async () => {
+    const fetchMock = mockFetch((url) => {
+      if (url.includes('wikidata.org')) {
+        return createResponse(true, wikidataBody({ enwiki: { title: 'English Article' } }));
+      }
+
+      assert.equal(url.includes('en.wikipedia.org'), true);
+      return createResponse(true, summaryBody('English summary', 'https://image.test/page.jpg'));
+    });
+
+    try {
+      assert.deepEqual(
+        await fetchPersonSummary(person, 'Fallback Title', 'en', new AbortController().signal),
+        {
+          extract: 'English summary',
+          imageUrl: 'https://image.test/page.jpg',
+          pageUrl: 'https://example.test/English%20summary',
         },
       );
     } finally {

@@ -765,11 +765,6 @@ button:disabled {
   margin-top: 0;
 }
 
-.result-mobile-image {
-  width: min(100%, 320px);
-  justify-self: center;
-}
-
 .result-mobile-next-button {
   justify-self: stretch;
 }
@@ -808,6 +803,17 @@ button:disabled {
   grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
   align-items: start;
   gap: 18px;
+}
+
+.result-image-frame {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1 / 1.08;
+  place-items: center;
+  overflow: hidden;
+  border: 1.5px solid rgba(47, 41, 31, 0.75);
+  border-radius: 6px;
+  background: rgba(239, 226, 197, 0.45);
 }
 
 .result-title-copy {
@@ -941,9 +947,8 @@ button:disabled {
 
 .person-image {
   width: 100%;
+  height: 100%;
   aspect-ratio: 1 / 1.08;
-  border: 1.5px solid rgba(47, 41, 31, 0.75);
-  border-radius: 6px;
   object-fit: cover;
   object-position: top center;
   filter: saturate(0.86) contrast(1.04);
@@ -1424,7 +1429,7 @@ button:disabled {
     display: none;
   }
 
-  .person-image {
+  .result-mobile-image {
     display: block;
     width: min(260px, 100%);
     align-self: center;
