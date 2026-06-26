@@ -8,7 +8,7 @@ The player chooses one of three modes from the start screen:
 
 - **Daily**: a daily challenge with cause of death, gender, and profession clues revealed from the start.
 - **Daily Hard**: a daily challenge where those clues can each be revealed only once per game.
-- **Practice**: an unlimited practice mode using the same core guessing loop.
+- **Arcade**: an unlimited mode with score-based extra chances.
 
 Each round loads in stages:
 
@@ -39,6 +39,16 @@ In **Daily Hard**:
 - The score is the number of correct answers plus two bonus points for each unused helper action.
 
 At the end of a daily run, the player can enter a username for the local daily leaderboard. If the name is left blank, the score is saved as `anonymous`. The share button copies a Wordle-style score summary to the clipboard.
+
+## Arcade Rules
+
+Arcade has no daily limit and uses the same reveal helpers as Daily Hard.
+
+- The player starts with one extra chance.
+- Correct guesses score more points when fewer helper clues are revealed.
+- A correct guess scores 5 points with no reveals, 3 points with one reveal, 2 points with two reveals, and 1 point with three reveals.
+- Every 15 points earns one extra chance.
+- A wrong answer or skip uses an available chance; once no chances remain, the run ends.
 
 ## Language Support
 

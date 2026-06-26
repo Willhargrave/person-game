@@ -2,7 +2,7 @@ import type { Language } from '../i18n.js';
 
 export const dailyRulesTitle = 'Rules';
 
-export type DailyRulesMode = 'daily' | 'easy-daily' | 'practice';
+export type DailyRulesMode = 'daily' | 'easy-daily' | 'arcade';
 
 export interface DailyRulesItem {
   text: string;
@@ -35,7 +35,7 @@ const rulesCopy = {
       'Each unused reveal is worth 2 bonus points at the end.',
     ],
     easy: 'You also get clues based on their cause of death, gender and profession.',
-    practice: [
+    arcade: [
       'Guess the famous figure from their birth and death locations.',
       'Reveal gender, cause of death, or profession if you need help.',
       'You get more points for using fewer reveals.',
@@ -43,7 +43,9 @@ const rulesCopy = {
       '1 reveal used: 3 points',
       '2 reveals used: 2 points',
       '3 reveals used: 1 point',
-      'Practice has no daily limit, so you can keep playing.',
+      'You start with one extra chance.',
+      'Every 15 points earns one extra chance.',
+      'Arcade has no daily limit, so you can keep playing.',
     ],
   },
   ja: {
@@ -64,7 +66,7 @@ const rulesCopy = {
       '未使用の表示は終了時に各2点のボーナスになります。',
     ],
     easy: 'さらに、死因・性別・職業に関する手がかりも表示されます。',
-    practice: [
+    arcade: [
       '出生地と死没地から有名人を当てます。',
       '困ったときは性別、死因、職業を表示できます。',
       '表示を少なく使うほど高得点になります。',
@@ -72,7 +74,9 @@ const rulesCopy = {
       '表示1回: 3点',
       '表示2回: 2点',
       '表示3回: 1点',
-      '練習モードにデイリー制限はないので、続けて遊べます。',
+      '追加で1回だけ間違えられるチャンスがあります。',
+      '15点ごとに追加チャンスを1回獲得します。',
+      'アーケードにデイリー制限はないので、続けて遊べます。',
     ],
   },
 } satisfies Record<Language, {
@@ -81,7 +85,7 @@ const rulesCopy = {
   base: string[];
   standard: string[];
   easy: string;
-  practice: string[];
+  arcade: string[];
 }>;
 
 export const getDailyRulesItems = (
@@ -90,8 +94,11 @@ export const getDailyRulesItems = (
 ): DailyRulesItem[] => {
   const copy = rulesCopy[language];
 
-  if (mode === 'practice') {
-    return copy.practice.map((text) => ({ text }));
+  if (mode === 'arcade') {
+    return copy.arcade.map((text) => ({
+      text,
+      chanceIcon: text.includes('chance') || text.includes('チャンス') ? copy.chanceIcon : undefined,
+    }));
   }
 
   const baseDailyRulesItems: DailyRulesItem[] = [

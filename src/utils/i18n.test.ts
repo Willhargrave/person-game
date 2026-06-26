@@ -38,7 +38,7 @@ describe('i18n helpers', () => {
   it('returns UI copy for English and Japanese', () => {
     assert.equal(getUiCopy('en').daily, 'Daily (hard mode)');
     assert.equal(getUiCopy('en').startEasyDaily, 'Start');
-    assert.equal(getUiCopy('en').startPractice, 'Start Practice');
+    assert.equal(getUiCopy('en').startArcade, 'Start Arcade');
     assert.equal(getUiCopy('en').skipRemaining, '1 skip remaining');
     assert.equal(getUiCopy('en').giveUp, 'Give up');
     assert.equal(getUiCopy('en').dailyChallenge(getUiCopy('en').easyDailyMode, '2026-06-25'), 'Daily Challenge 2026-06-25');
@@ -46,7 +46,7 @@ describe('i18n helpers', () => {
     assert.equal(getUiCopy('en').viewSummary, 'View summary');
     assert.equal(getUiCopy('ja').daily, 'デイリー（ハード）');
     assert.equal(getUiCopy('ja').startEasyDaily, '開始');
-    assert.equal(getUiCopy('ja').startPractice, '練習を開始');
+    assert.equal(getUiCopy('ja').startArcade, 'アーケードを開始');
     assert.equal(getUiCopy('ja').skipRemaining, '残り1スキップ');
     assert.equal(getUiCopy('ja').giveUp, 'ギブアップ');
     assert.equal(getUiCopy('ja').dailyChallenge(getUiCopy('ja').easyDailyMode, '2026-06-25'), 'デイリーチャレンジ 2026-06-25');

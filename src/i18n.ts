@@ -18,7 +18,7 @@ export interface UiCopy {
   tagline: string;
   daily: string;
   easyDaily: string;
-  practice: string;
+  arcade: string;
   chooseGameMode: string;
   sourcePrefix: string;
   wikidata: string;
@@ -30,7 +30,7 @@ export interface UiCopy {
   rulesTitle: string;
   startDaily: string;
   startEasyDaily: string;
-  startPractice: string;
+  startArcade: string;
   whoAmI: string;
   guessPlaceholder: string;
   submit: string;
@@ -39,10 +39,12 @@ export interface UiCopy {
   giveUp: string;
   nextRound: string;
   viewLeaderboard: string;
+  viewResults: string;
   score: string;
   chanceAvailable: string;
   chanceUsed: string;
   chanceRemaining: string;
+  chancesRemaining: (count: number) => string;
   chanceLabel: string;
   helperLabels: Record<HintKey, string>;
   helperAvailable: string;
@@ -102,7 +104,7 @@ const uiCopy: Record<Language, UiCopy> = {
     tagline: 'Uncover famous people based on their birth and death',
     daily: 'Daily (hard mode)',
     easyDaily: 'Daily',
-    practice: 'Practice',
+    arcade: 'Arcade',
     chooseGameMode: 'Choose game mode',
     sourcePrefix: 'All data sourced from',
     wikidata: 'Wikidata',
@@ -116,7 +118,7 @@ const uiCopy: Record<Language, UiCopy> = {
     rulesTitle: 'Rules',
     startDaily: 'Start Daily',
     startEasyDaily: 'Start',
-    startPractice: 'Start Practice',
+    startArcade: 'Start Arcade',
     whoAmI: 'Who Am I?',
     guessPlaceholder: 'Enter a full name',
     submit: 'Submit',
@@ -125,10 +127,13 @@ const uiCopy: Record<Language, UiCopy> = {
     giveUp: 'Give up',
     nextRound: 'Next round',
     viewLeaderboard: 'View leaderboard',
+    viewResults: 'View results',
     score: 'Score',
     chanceAvailable: 'Chance available',
     chanceUsed: 'Chance used',
     chanceRemaining: '1 chance remaining',
+    chancesRemaining: (count) =>
+      `${count} ${count === 1 ? 'chance' : 'chances'} remaining`,
     chanceLabel: 'Chance',
     helperLabels: {
       methodOfDeath: 'Cause of Death',
@@ -163,9 +168,8 @@ const uiCopy: Record<Language, UiCopy> = {
     backToCard: 'Back to card',
     loadingResult: 'Loading result',
     revealing: 'Revealing...',
-    sessionCompleteTitle: 'Session complete',
-    sessionCompleteBody:
-      'You have seen every person in this seed set. Refresh the page to start a new session.',
+    sessionCompleteTitle: 'Arcade complete',
+    sessionCompleteBody: 'Your Arcade run is over. Start again to try for a higher score.',
     changeMode: 'Change mode',
     dailyChallenge: (mode, date) => `${mode} Challenge ${date}`,
     points: (score) => `${score} points`,
@@ -193,7 +197,7 @@ const uiCopy: Record<Language, UiCopy> = {
     tagline: '生没地を手がかりに有名人を見つけよう',
     daily: 'デイリー（ハード）',
     easyDaily: 'デイリー',
-    practice: '練習',
+    arcade: 'アーケード',
     chooseGameMode: 'ゲームモードを選択',
     sourcePrefix: 'データ出典:',
     wikidata: 'Wikidata',
@@ -206,7 +210,7 @@ const uiCopy: Record<Language, UiCopy> = {
     rulesTitle: 'ルール',
     startDaily: 'デイリーを開始',
     startEasyDaily: '開始',
-    startPractice: '練習を開始',
+    startArcade: 'アーケードを開始',
     whoAmI: '私は誰？',
     guessPlaceholder: 'フルネームを入力',
     submit: '回答',
@@ -215,10 +219,12 @@ const uiCopy: Record<Language, UiCopy> = {
     giveUp: 'ギブアップ',
     nextRound: '次の問題',
     viewLeaderboard: 'ランキングを見る',
+    viewResults: '結果を見る',
     score: 'スコア',
     chanceAvailable: 'チャンスあり',
     chanceUsed: 'チャンス使用済み',
     chanceRemaining: '残り1チャンス',
+    chancesRemaining: (count) => `残り${count}チャンス`,
     chanceLabel: 'チャンス',
     helperLabels: {
       methodOfDeath: '死因',
@@ -253,9 +259,8 @@ const uiCopy: Record<Language, UiCopy> = {
     backToCard: 'カードに戻る',
     loadingResult: '結果を読み込み中',
     revealing: '表示中...',
-    sessionCompleteTitle: 'セッション完了',
-    sessionCompleteBody:
-      'このデータセットの人物をすべて見ました。ページを再読み込みすると新しいセッションを開始できます。',
+    sessionCompleteTitle: 'アーケード終了',
+    sessionCompleteBody: 'アーケードのランは終了です。もう一度始めて高得点を目指しましょう。',
     changeMode: 'モード変更',
     dailyChallenge: (mode, date) => `${mode}チャレンジ ${date}`,
     points: (score) => `${score} 点`,

@@ -104,7 +104,7 @@ export const pickRandomPerson = (
   return candidates[Math.floor(Math.random() * candidates.length)] ?? people[0];
 };
 
-export const pickPracticePerson = (
+export const pickArcadePerson = (
   people: HistoricalPerson[],
   usedPersonIds: string[],
   openingCount = 5,

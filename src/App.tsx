@@ -40,7 +40,12 @@ import {
   saveDailyLeaderboardEntry,
 } from './utils/dailyChallenge';
 import { getDailyRulesItems } from './utils/dailyRules';
-import { getValidPeople, isCorrectGuess, pickPracticePerson } from './utils/people';
+import {
+  arcadeInitialChances,
+  getArcadeChancesAfterScore,
+  getArcadeMissOutcome,
+} from './utils/arcade';
+import { getValidPeople, isCorrectGuess, pickArcadePerson } from './utils/people';
 import {
   fetchLocalizedPlaceLabels,
   type LocalizedPlaceLabels,
@@ -149,6 +154,8 @@ function App() {
   const [result, setResult] = useState<GuessResult>(null);
   const [isSessionComplete, setIsSessionComplete] = useState(false);
   const [score, setScore] = useState(0);
+  const [arcadeChances, setArcadeChances] = useState(arcadeInitialChances);
+  const [isArcadeGameOver, setIsArcadeGameOver] = useState(false);
   const [dailyCorrectGuesses, setDailyCorrectGuesses] = useState(0);
   const [dailyChances, setDailyChances] = useState(dailyInitialChances);
   const [dailyUnusedHints, setDailyUnusedHints] = useState<RevealedHints>(initialDailyUnusedHints);
@@ -158,7 +165,7 @@ function App() {
   const [dailyFinalStats, setDailyFinalStats] = useState<DailyFinalStats | null>(null);
   const [dailyEndReason, setDailyEndReason] = useState<string | null>(null);
   const [isDailyRulesOpen, setIsDailyRulesOpen] = useState(false);
-  const [isPracticeRulesOpen, setIsPracticeRulesOpen] = useState(false);
+  const [isArcadeRulesOpen, setIsArcadeRulesOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [chanceNotice, setChanceNotice] = useState<string | null>(null);
   const [localizedPlaceLabels, setLocalizedPlaceLabels] = useState<LocalizedPlaceLabels>({});
@@ -181,13 +188,15 @@ function App() {
   const revealedHintCount = Object.values(revealedHints).filter(Boolean).length;
   const isDailyMode = mode === 'daily' || mode === 'easy-daily';
   const isEasyDailyMode = mode === 'easy-daily';
-  const isRulesOpen = isDailyRulesOpen || isPracticeRulesOpen;
+  const isRulesOpen = isDailyRulesOpen || isArcadeRulesOpen;
   const dailyModeLabel = isEasyDailyMode ? copy.easyDailyMode : copy.dailyMode;
   const isDailyLastPerson = isDailyMode && dailyRoundIndex >= dailyPeople.length - 1;
   const shouldDailyEndAfterResult =
     isDailyMode &&
     result !== null &&
     (isDailyGameOver || (result === 'correct' && isDailyLastPerson));
+  const shouldArcadeEndAfterResult =
+    mode === 'arcade' && result !== null && isArcadeGameOver;
   const dailyBlockedHints: RevealedHints = isEasyDailyMode
     ? { ...noDailyHelperActions }
     : {
@@ -197,7 +206,7 @@ function App() {
       };
   const isRoundReady = isRoundIntroReady(roundIntroStage);
   const rulesItems = getDailyRulesItems(
-    mode === 'practice' ? 'practice' : isEasyDailyMode ? 'easy-daily' : 'daily',
+    mode === 'arcade' ? 'arcade' : isEasyDailyMode ? 'easy-daily' : 'daily',
     language,
   );
   const dailyPreviewEntry: DailyLeaderboardEntry | null = dailyFinalStats
@@ -401,7 +410,7 @@ function App() {
     });
     setDailyEndReason(null);
     setIsDailyRulesOpen(false);
-    setIsPracticeRulesOpen(false);
+    setIsArcadeRulesOpen(false);
     setShareStatus(null);
     setChanceNotice(null);
     setIsSessionComplete(true);
@@ -419,20 +428,22 @@ function App() {
     }
   }, [dailyDateKey, restoreDailyCompletion]);
 
-  const startPractice = () => {
+  const startArcade = () => {
     clearRevealTimer();
-    const firstPerson = pickPracticePerson(people, []);
+    const firstPerson = pickArcadePerson(people, []);
 
-    setMode('practice');
+    setMode('arcade');
     setPerson(firstPerson);
     setUsedPersonIds(firstPerson ? [firstPerson.id] : []);
     setIsSessionComplete(false);
     setScore(0);
+    setArcadeChances(arcadeInitialChances);
+    setIsArcadeGameOver(false);
     setDailyEntry(null);
     setDailyFinalStats(null);
     setDailyEndReason(null);
     setIsDailyRulesOpen(false);
-    setIsPracticeRulesOpen(true);
+    setIsArcadeRulesOpen(true);
     setShareStatus(null);
     setChanceNotice(null);
     resetRoundState();
@@ -460,11 +471,12 @@ function App() {
       isEasyDaily ? { ...noDailyHelperActions } : { ...initialDailyUnusedHints },
     );
     setIsDailyGameOver(false);
+    setIsArcadeGameOver(false);
     setDailyEntry(null);
     setDailyFinalStats(null);
     setDailyEndReason(null);
     setIsDailyRulesOpen(true);
-    setIsPracticeRulesOpen(false);
+    setIsArcadeRulesOpen(false);
     setShareStatus(null);
     setChanceNotice(null);
     setIsSessionComplete(false);
@@ -481,8 +493,10 @@ function App() {
     setDailyFinalStats(null);
     setDailyEndReason(null);
     setIsDailyGameOver(false);
+    setArcadeChances(arcadeInitialChances);
+    setIsArcadeGameOver(false);
     setIsDailyRulesOpen(false);
-    setIsPracticeRulesOpen(false);
+    setIsArcadeRulesOpen(false);
     setShareStatus(null);
     setChanceNotice(null);
     resetRoundState();
@@ -611,7 +625,21 @@ function App() {
     }
 
     if (nextResult === 'correct') {
-      setScore((currentScore) => currentScore + getPointsForHintCount(revealedHintCount));
+      const roundPoints = getPointsForHintCount(revealedHintCount);
+      const nextScore = score + roundPoints;
+
+      setScore(nextScore);
+      setArcadeChances((currentChances) =>
+        getArcadeChancesAfterScore(score, nextScore, currentChances),
+      );
+    } else {
+      const missOutcome = getArcadeMissOutcome(arcadeChances);
+      setArcadeChances(missOutcome.remainingChances);
+      setIsArcadeGameOver(missOutcome.isGameOver);
+
+      if (!missOutcome.isGameOver) {
+        setChanceNotice(copy.chancesRemaining(missOutcome.remainingChances));
+      }
     }
   };
 
@@ -626,6 +654,16 @@ function App() {
       if (isEasyDailyMode && !missOutcome.isGameOver) {
         setChanceNotice(copy.chanceRemaining);
       }
+
+      return;
+    }
+
+    const missOutcome = getArcadeMissOutcome(arcadeChances);
+    setArcadeChances(missOutcome.remainingChances);
+    setIsArcadeGameOver(missOutcome.isGameOver);
+
+    if (!missOutcome.isGameOver) {
+      setChanceNotice(copy.chancesRemaining(missOutcome.remainingChances));
     }
   };
 
@@ -650,7 +688,13 @@ function App() {
       return;
     }
 
-    const nextPerson = pickPracticePerson(people, usedPersonIds);
+    if (isArcadeGameOver) {
+      setIsSessionComplete(true);
+      setPerson(null);
+      return;
+    }
+
+    const nextPerson = pickArcadePerson(people, usedPersonIds);
 
     if (!nextPerson) {
       setIsSessionComplete(true);
@@ -730,8 +774,8 @@ function App() {
             <button type="button" onClick={() => startDaily()}>
               {copy.daily}
             </button>
-            <button type="button" onClick={startPractice}>
-              {copy.practice}
+            <button type="button" onClick={startArcade}>
+              {copy.arcade}
             </button>
           </div>
           <div className="language-toggle" aria-label="Language">
@@ -831,8 +875,8 @@ function App() {
               <button type="button" onClick={handleShareDailyScore}>
                 {copy.shareScore}
               </button>
-              <button className="secondary-button" type="button" onClick={startPractice}>
-                {copy.practice}
+              <button className="secondary-button" type="button" onClick={startArcade}>
+                {copy.arcade}
               </button>
             </div>
             {shareStatus ? <p className="share-status">{shareStatus}</p> : null}
@@ -930,8 +974,8 @@ function App() {
           title={copy.rulesTitle}
           items={rulesItems}
           startLabel={
-            mode === 'practice'
-              ? copy.startPractice
+            mode === 'arcade'
+              ? copy.startArcade
               : isEasyDailyMode
                 ? copy.startEasyDaily
                 : copy.startDaily
@@ -940,7 +984,7 @@ function App() {
           chanceIconLabel={copy.chanceLabel}
           onDismiss={() => {
             setIsDailyRulesOpen(false);
-            setIsPracticeRulesOpen(false);
+            setIsArcadeRulesOpen(false);
           }}
         />
       ) : null}
@@ -981,7 +1025,21 @@ function App() {
                     </span>
                   </span>
                 ) : (
-                  `Score: ${score}`
+                  <span className="daily-status-icons">
+                    <span>
+                      {copy.score}: {score}
+                    </span>
+                    <span className="daily-chance-icons" aria-label="Arcade chances">
+                      <span
+                        className={`daily-chance-icon ${arcadeChances > 0 ? '' : 'used'}`}
+                        title={arcadeChances > 0 ? copy.chanceAvailable : copy.chanceUsed}
+                        aria-label={arcadeChances > 0 ? copy.chanceAvailable : copy.chanceUsed}
+                      >
+                        {dailyChanceIcon}
+                      </span>
+                      <span aria-hidden="true">×{arcadeChances}</span>
+                    </span>
+                  </span>
                 )}
               </div>
             ) : null}
@@ -1046,7 +1104,13 @@ function App() {
                 }}
                 onNextRound={handleNextRound}
                 onMinimize={() => setIsPanelMinimized(true)}
-                nextRoundLabel={shouldDailyEndAfterResult ? copy.viewLeaderboard : copy.nextRound}
+                nextRoundLabel={
+                  shouldDailyEndAfterResult || shouldArcadeEndAfterResult
+                    ? isDailyMode
+                      ? copy.viewLeaderboard
+                      : copy.viewResults
+                    : copy.nextRound
+                }
               />
             ) : !isRoundReady ? null : (
               <PersonInfo
@@ -1079,11 +1143,10 @@ function App() {
                   title: copy.whoAmI,
                   placeholder: copy.guessPlaceholder,
                   submit: copy.submit,
-                  skip: isDailyMode
-                    ? dailyChances > 0
+                  skip:
+                    (isDailyMode ? dailyChances : arcadeChances) > 0
                       ? copy.skipRemaining
-                      : copy.giveUp
-                    : copy.skip,
+                      : copy.giveUp,
                   nextRound: copy.nextRound,
                 }}
                 getPersonName={getPersonName}

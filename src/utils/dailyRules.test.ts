@@ -51,9 +51,9 @@ describe('daily rules copy', () => {
     );
   });
 
-  it('returns practice rules copy', () => {
+  it('returns arcade rules copy', () => {
     assert.deepEqual(
-      getDailyRulesItems('practice').map((item) => item.text),
+      getDailyRulesItems('arcade').map((item) => item.text),
       [
         'Guess the famous figure from their birth and death locations.',
         'Reveal gender, cause of death, or profession if you need help.',
@@ -62,14 +62,16 @@ describe('daily rules copy', () => {
         '1 reveal used: 3 points',
         '2 reveals used: 2 points',
         '3 reveals used: 1 point',
-        'Practice has no daily limit, so you can keep playing.',
+        'You start with one extra chance.',
+        'Every 15 points earns one extra chance.',
+        'Arcade has no daily limit, so you can keep playing.',
       ],
     );
   });
 
-  it('returns Japanese practice rules copy', () => {
+  it('returns Japanese arcade rules copy', () => {
     assert.deepEqual(
-      getDailyRulesItems('practice', 'ja').map((item) => item.text),
+      getDailyRulesItems('arcade', 'ja').map((item) => item.text),
       [
         '出生地と死没地から有名人を当てます。',
         '困ったときは性別、死因、職業を表示できます。',
@@ -78,7 +80,9 @@ describe('daily rules copy', () => {
         '表示1回: 3点',
         '表示2回: 2点',
         '表示3回: 1点',
-        '練習モードにデイリー制限はないので、続けて遊べます。',
+        '追加で1回だけ間違えられるチャンスがあります。',
+        '15点ごとに追加チャンスを1回獲得します。',
+        'アーケードにデイリー制限はないので、続けて遊べます。',
       ],
     );
   });
@@ -106,6 +110,14 @@ describe('daily rules copy', () => {
       label: 'Chance',
     });
     assert.deepEqual(getDailyRulesItems('easy-daily')[3]?.chanceIcon, {
+      icon: '◆',
+      label: 'Chance',
+    });
+    assert.deepEqual(getDailyRulesItems('arcade')[7]?.chanceIcon, {
+      icon: '◆',
+      label: 'Chance',
+    });
+    assert.deepEqual(getDailyRulesItems('arcade')[8]?.chanceIcon, {
       icon: '◆',
       label: 'Chance',
     });
