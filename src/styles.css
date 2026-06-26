@@ -1100,8 +1100,23 @@ button:disabled {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.mode-actions > button:last-child {
+.arcade-mode-button,
+.mode-explainer {
   grid-column: 1 / -1;
+}
+
+.mode-explainer {
+  margin: -2px 0 2px;
+  color: #5f523c;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.arcade-mode-explainer {
+  margin-bottom: 0;
 }
 
 .language-toggle {

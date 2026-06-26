@@ -37,6 +37,14 @@ describe('i18n helpers', () => {
 
   it('returns UI copy for English and Japanese', () => {
     assert.equal(getUiCopy('en').daily, 'Daily (hard mode)');
+    assert.equal(
+      getUiCopy('en').dailyModeSummary,
+      'Daily mode shows the cause of death, gender, and profession of famous figures. In Hard mode, you only have the birth and death information.',
+    );
+    assert.equal(
+      getUiCopy('en').arcadeModeSummary,
+      'Collect and spend points to see how far you can go.',
+    );
     assert.equal(getUiCopy('en').startEasyDaily, 'Start');
     assert.equal(getUiCopy('en').startArcade, 'Start Arcade');
     assert.equal(getUiCopy('en').skipRemaining, '1 skip remaining');
@@ -45,6 +53,10 @@ describe('i18n helpers', () => {
     assert.equal(getUiCopy('en').dailyChallenge(getUiCopy('en').dailyMode, '2026-06-25'), 'Daily Hard Challenge 2026-06-25');
     assert.equal(getUiCopy('en').viewSummary, 'View summary');
     assert.equal(getUiCopy('ja').daily, 'デイリー（ハード）');
+    assert.equal(
+      getUiCopy('ja').dailyModeSummary,
+      'デイリーでは有名人の死因・性別・職業が表示されます。ハードモードでは出生と死亡の情報だけで当てます。',
+    );
     assert.equal(getUiCopy('ja').startEasyDaily, '開始');
     assert.equal(getUiCopy('ja').startArcade, 'アーケードを開始');
     assert.equal(getUiCopy('ja').skipRemaining, '残り1スキップ');

@@ -19,6 +19,8 @@ export interface UiCopy {
   daily: string;
   easyDaily: string;
   arcade: string;
+  dailyModeSummary: string;
+  arcadeModeSummary: string;
   chooseGameMode: string;
   sourcePrefix: string;
   wikidata: string;
@@ -105,6 +107,9 @@ const uiCopy: Record<Language, UiCopy> = {
     daily: 'Daily (hard mode)',
     easyDaily: 'Daily',
     arcade: 'Arcade',
+    dailyModeSummary:
+      'Daily mode shows the cause of death, gender, and profession of famous figures. In Hard mode, you only have the birth and death information.',
+    arcadeModeSummary: 'Collect and spend points to see how far you can go.',
     chooseGameMode: 'Choose game mode',
     sourcePrefix: 'All data sourced from',
     wikidata: 'Wikidata',
@@ -198,6 +203,9 @@ const uiCopy: Record<Language, UiCopy> = {
     daily: 'デイリー（ハード）',
     easyDaily: 'デイリー',
     arcade: 'アーケード',
+    dailyModeSummary:
+      'デイリーでは有名人の死因・性別・職業が表示されます。ハードモードでは出生と死亡の情報だけで当てます。',
+    arcadeModeSummary: 'ポイントを集めて使いながら、どこまで続けられるか挑戦します。',
     chooseGameMode: 'ゲームモードを選択',
     sourcePrefix: 'データ出典:',
     wikidata: 'Wikidata',

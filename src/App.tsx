@@ -823,9 +823,11 @@ function App() {
             <button type="button" onClick={() => startDaily()}>
               {copy.daily}
             </button>
-            <button type="button" onClick={startArcade}>
+            <p className="mode-explainer">{copy.dailyModeSummary}</p>
+            <button className="arcade-mode-button" type="button" onClick={startArcade}>
               {copy.arcade}
             </button>
+            <p className="mode-explainer arcade-mode-explainer">{copy.arcadeModeSummary}</p>
           </div>
           <div className="language-toggle" aria-label="Language">
             <button
