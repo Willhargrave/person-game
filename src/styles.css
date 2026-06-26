@@ -1362,7 +1362,9 @@ button:disabled {
   }
 
   .daily-complete-layout {
-    width: calc(100vw - 24px);
+    justify-self: center;
+    width: 100%;
+    max-width: calc(100% - 24px);
     grid-template-columns: 1fr;
   }
 
