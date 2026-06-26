@@ -38,6 +38,7 @@ describe('i18n helpers', () => {
   it('returns UI copy for English and Japanese', () => {
     assert.equal(getUiCopy('en').daily, 'Daily (hard mode)');
     assert.equal(getUiCopy('en').startEasyDaily, 'Start');
+    assert.equal(getUiCopy('en').startPractice, 'Start Practice');
     assert.equal(getUiCopy('en').skipRemaining, '1 skip remaining');
     assert.equal(getUiCopy('en').giveUp, 'Give up');
     assert.equal(getUiCopy('en').dailyChallenge(getUiCopy('en').easyDailyMode, '2026-06-25'), 'Daily Challenge 2026-06-25');
@@ -45,6 +46,7 @@ describe('i18n helpers', () => {
     assert.equal(getUiCopy('en').viewSummary, 'View summary');
     assert.equal(getUiCopy('ja').daily, 'デイリー（ハード）');
     assert.equal(getUiCopy('ja').startEasyDaily, '開始');
+    assert.equal(getUiCopy('ja').startPractice, '練習を開始');
     assert.equal(getUiCopy('ja').skipRemaining, '残り1スキップ');
     assert.equal(getUiCopy('ja').giveUp, 'ギブアップ');
     assert.equal(getUiCopy('ja').dailyChallenge(getUiCopy('ja').easyDailyMode, '2026-06-25'), 'デイリーチャレンジ 2026-06-25');
@@ -65,6 +67,23 @@ describe('i18n helpers', () => {
     assert.equal(localizedPerson.name, '安倍晋三');
     assert.equal(localizedPerson.birthPlace, '東京、日本');
     assert.deepEqual(getLocalizedGuessNames(person, 'ja'), ['Shinzo Abe', '安倍晋三']);
+  });
+
+  it('uses resolved place labels when no manual place override exists', () => {
+    const fallbackPerson: HistoricalPerson = {
+      ...person,
+      id: 'not-manually-localized',
+      name: 'Not Manually Localized',
+      birthPlace: 'English Birth Place',
+      deathPlace: 'English Death Place',
+    };
+    const localizedPerson = getLocalizedPerson(fallbackPerson, 'ja', {
+      birthPlace: '日本語の出生地',
+      deathPlace: '日本語の死没地',
+    });
+
+    assert.equal(localizedPerson.birthPlace, '日本語の出生地');
+    assert.equal(localizedPerson.deathPlace, '日本語の死没地');
   });
 
   it('localizes common hint values', () => {

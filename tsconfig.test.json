@@ -22,6 +22,10 @@
     "src/utils/dailyRules.ts",
     "src/utils/dailyRules.test.ts",
     "src/utils/roundIntro.ts",
-    "src/utils/roundIntro.test.ts"
+    "src/utils/roundIntro.test.ts",
+    "src/utils/wikipediaSummary.ts",
+    "src/utils/wikipediaSummary.test.ts",
+    "src/utils/wikidataPlaces.ts",
+    "src/utils/wikidataPlaces.test.ts"
   ]
 }

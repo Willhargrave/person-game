@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { GuessResult, HistoricalPerson, PersonHints } from '../types';
 import type { Language, LocalizedPerson, UiCopy } from '../i18n';
 import { getPlaceFlag } from '../utils/placeFlags';
+import { fetchPersonSummary, type PersonSummary } from '../utils/wikipediaSummary';
 
 interface ResultPanelProps {
   result: GuessResult;
@@ -30,27 +31,6 @@ interface ResultPanelProps {
   onMinimize: () => void;
   nextRoundLabel?: string;
 }
-
-interface WikipediaSummary {
-  extract?: string;
-  thumbnail?: {
-    source: string;
-  };
-  content_urls?: {
-    desktop?: {
-      page?: string;
-    };
-  };
-}
-
-interface PersonSummary {
-  extract: string;
-  imageUrl?: string;
-  pageUrl?: string;
-}
-
-const getSummaryUrl = (title: string, language: Language) =>
-  `https://${language === 'ja' ? 'ja' : 'en'}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
 
 export function ResultPanel({
   result,
@@ -93,24 +73,14 @@ export function ResultPanel({
       setSummary(null);
 
       try {
-        const response = await fetch(getSummaryUrl(localizedPerson.wikipediaTitle, language), {
-          signal: controller.signal,
-          headers: {
-            Accept: 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Summary unavailable');
-        }
-
-        const data = (await response.json()) as WikipediaSummary;
-
-        setSummary({
-          extract: data.extract ?? labels.summaryUnavailable,
-          imageUrl: data.thumbnail?.source,
-          pageUrl: data.content_urls?.desktop?.page,
-        });
+        setSummary(
+          await fetchPersonSummary(
+            person,
+            localizedPerson.wikipediaTitle,
+            language,
+            controller.signal,
+          ),
+        );
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
           return;
@@ -127,7 +97,7 @@ export function ResultPanel({
     void fetchSummary();
 
     return () => controller.abort();
-  }, [labels.summaryUnavailable, language, localizedPerson.wikipediaTitle, result]);
+  }, [labels.summaryUnavailable, language, localizedPerson.wikipediaTitle, person, result]);
 
   useEffect(() => {
     setIsMobileSummaryVisible(false);

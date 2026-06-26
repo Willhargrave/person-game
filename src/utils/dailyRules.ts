@@ -2,7 +2,7 @@ import type { Language } from '../i18n.js';
 
 export const dailyRulesTitle = 'Rules';
 
-export type DailyRulesMode = 'daily' | 'easy-daily';
+export type DailyRulesMode = 'daily' | 'easy-daily' | 'practice';
 
 export interface DailyRulesItem {
   text: string;
@@ -35,6 +35,16 @@ const rulesCopy = {
       'Each unused reveal is worth 2 bonus points at the end.',
     ],
     easy: 'You also get clues based on their cause of death, gender and profession.',
+    practice: [
+      'Guess the famous figure from their birth and death locations.',
+      'Reveal gender, cause of death, or profession if you need help.',
+      'You get more points for using fewer reveals.',
+      '0 reveals used: 5 points',
+      '1 reveal used: 3 points',
+      '2 reveals used: 2 points',
+      '3 reveals used: 1 point',
+      'Practice has no daily limit, so you can keep playing.',
+    ],
   },
   ja: {
     helperIcons: [
@@ -54,6 +64,16 @@ const rulesCopy = {
       '未使用の表示は終了時に各2点のボーナスになります。',
     ],
     easy: 'さらに、死因・性別・職業に関する手がかりも表示されます。',
+    practice: [
+      '出生地と死没地から有名人を当てます。',
+      '困ったときは性別、死因、職業を表示できます。',
+      '表示を少なく使うほど高得点になります。',
+      '表示0回: 5点',
+      '表示1回: 3点',
+      '表示2回: 2点',
+      '表示3回: 1点',
+      '練習モードにデイリー制限はないので、続けて遊べます。',
+    ],
   },
 } satisfies Record<Language, {
   helperIcons: NonNullable<DailyRulesItem['helperIcons']>;
@@ -61,6 +81,7 @@ const rulesCopy = {
   base: string[];
   standard: string[];
   easy: string;
+  practice: string[];
 }>;
 
 export const getDailyRulesItems = (
@@ -68,6 +89,11 @@ export const getDailyRulesItems = (
   language: Language = 'en',
 ): DailyRulesItem[] => {
   const copy = rulesCopy[language];
+
+  if (mode === 'practice') {
+    return copy.practice.map((text) => ({ text }));
+  }
+
   const baseDailyRulesItems: DailyRulesItem[] = [
     { text: copy.base[0] ?? '' },
     { text: copy.base[1] ?? '', chanceIcon: copy.chanceIcon },

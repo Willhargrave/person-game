@@ -1,5 +1,6 @@
 import type { HistoricalPerson, HintKey, PersonHints, ProfessionCategory } from './types.js';
 import { getProfessionCategory } from './utils/professionCategories.js';
+import type { LocalizedPlaceLabels } from './utils/wikidataPlaces.js';
 
 export type Language = 'en' | 'ja';
 
@@ -29,6 +30,7 @@ export interface UiCopy {
   rulesTitle: string;
   startDaily: string;
   startEasyDaily: string;
+  startPractice: string;
   whoAmI: string;
   guessPlaceholder: string;
   submit: string;
@@ -114,6 +116,7 @@ const uiCopy: Record<Language, UiCopy> = {
     rulesTitle: 'Rules',
     startDaily: 'Start Daily',
     startEasyDaily: 'Start',
+    startPractice: 'Start Practice',
     whoAmI: 'Who Am I?',
     guessPlaceholder: 'Enter a full name',
     submit: 'Submit',
@@ -203,6 +206,7 @@ const uiCopy: Record<Language, UiCopy> = {
     rulesTitle: 'ルール',
     startDaily: 'デイリーを開始',
     startEasyDaily: '開始',
+    startPractice: '練習を開始',
     whoAmI: '私は誰？',
     guessPlaceholder: 'フルネームを入力',
     submit: '回答',
@@ -443,6 +447,7 @@ export const formatHistoricalDate = (date: string, language: Language): string =
 export const getLocalizedPerson = (
   person: HistoricalPerson,
   language: Language,
+  placeLabels: LocalizedPlaceLabels = {},
 ): LocalizedPerson => {
   const localized = localizedPeople[person.id]?.[language];
 
@@ -450,8 +455,8 @@ export const getLocalizedPerson = (
     name: localized?.name ?? person.name,
     birthDate: formatHistoricalDate(person.birthDate, language),
     deathDate: formatHistoricalDate(person.deathDate, language),
-    birthPlace: localized?.birthPlace ?? person.birthPlace,
-    deathPlace: localized?.deathPlace ?? person.deathPlace,
+    birthPlace: localized?.birthPlace ?? placeLabels.birthPlace ?? person.birthPlace,
+    deathPlace: localized?.deathPlace ?? placeLabels.deathPlace ?? person.deathPlace,
     wikipediaTitle: localized?.wikipediaTitle ?? localized?.name ?? person.name,
   };
 };

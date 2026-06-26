@@ -51,6 +51,38 @@ describe('daily rules copy', () => {
     );
   });
 
+  it('returns practice rules copy', () => {
+    assert.deepEqual(
+      getDailyRulesItems('practice').map((item) => item.text),
+      [
+        'Guess the famous figure from their birth and death locations.',
+        'Reveal gender, cause of death, or profession if you need help.',
+        'You get more points for using fewer reveals.',
+        '0 reveals used: 5 points',
+        '1 reveal used: 3 points',
+        '2 reveals used: 2 points',
+        '3 reveals used: 1 point',
+        'Practice has no daily limit, so you can keep playing.',
+      ],
+    );
+  });
+
+  it('returns Japanese practice rules copy', () => {
+    assert.deepEqual(
+      getDailyRulesItems('practice', 'ja').map((item) => item.text),
+      [
+        '出生地と死没地から有名人を当てます。',
+        '困ったときは性別、死因、職業を表示できます。',
+        '表示を少なく使うほど高得点になります。',
+        '表示0回: 5点',
+        '表示1回: 3点',
+        '表示2回: 2点',
+        '表示3回: 1点',
+        '練習モードにデイリー制限はないので、続けて遊べます。',
+      ],
+    );
+  });
+
   it('includes helper icons for the reveal rule', () => {
     assert.deepEqual(getDailyRulesItems('daily')[1]?.helperIcons, [
       { icon: '☠', label: 'Cause of death reveal' },

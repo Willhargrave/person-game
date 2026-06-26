@@ -42,6 +42,10 @@ import {
 import { getDailyRulesItems } from './utils/dailyRules';
 import { getValidPeople, isCorrectGuess, pickPracticePerson } from './utils/people';
 import {
+  fetchLocalizedPlaceLabels,
+  type LocalizedPlaceLabels,
+} from './utils/wikidataPlaces';
+import {
   isRoundIntroReady,
   getNextRoundIntroStage,
   roundIntroSteps,
@@ -154,8 +158,10 @@ function App() {
   const [dailyFinalStats, setDailyFinalStats] = useState<DailyFinalStats | null>(null);
   const [dailyEndReason, setDailyEndReason] = useState<string | null>(null);
   const [isDailyRulesOpen, setIsDailyRulesOpen] = useState(false);
+  const [isPracticeRulesOpen, setIsPracticeRulesOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [chanceNotice, setChanceNotice] = useState<string | null>(null);
+  const [localizedPlaceLabels, setLocalizedPlaceLabels] = useState<LocalizedPlaceLabels>({});
   const [dailyCountdownNow, setDailyCountdownNow] = useState(() => new Date());
   const [revealedHints, setRevealedHints] = useState<RevealedHints>(initialRevealedHints);
   const [isRevealLoading, setIsRevealLoading] = useState(false);
@@ -169,10 +175,13 @@ function App() {
   const currentHints = person ? (personHints[person.id] ?? fallbackHints) : fallbackHints;
   const currentLocalizedHints = getLocalizedHints(currentHints, language);
   const currentLocalizedClueHints = getLocalizedClueHints(currentHints, language, person?.id);
-  const currentLocalizedPerson = person ? getLocalizedPerson(person, language) : null;
+  const currentLocalizedPerson = person
+    ? getLocalizedPerson(person, language, localizedPlaceLabels)
+    : null;
   const revealedHintCount = Object.values(revealedHints).filter(Boolean).length;
   const isDailyMode = mode === 'daily' || mode === 'easy-daily';
   const isEasyDailyMode = mode === 'easy-daily';
+  const isRulesOpen = isDailyRulesOpen || isPracticeRulesOpen;
   const dailyModeLabel = isEasyDailyMode ? copy.easyDailyMode : copy.dailyMode;
   const isDailyLastPerson = isDailyMode && dailyRoundIndex >= dailyPeople.length - 1;
   const shouldDailyEndAfterResult =
@@ -187,8 +196,8 @@ function App() {
         profession: !dailyUnusedHints.profession,
       };
   const isRoundReady = isRoundIntroReady(roundIntroStage);
-  const dailyRulesItems = getDailyRulesItems(
-    isEasyDailyMode ? 'easy-daily' : 'daily',
+  const rulesItems = getDailyRulesItems(
+    mode === 'practice' ? 'practice' : isEasyDailyMode ? 'easy-daily' : 'daily',
     language,
   );
   const dailyPreviewEntry: DailyLeaderboardEntry | null = dailyFinalStats
@@ -229,13 +238,41 @@ function App() {
     window.localStorage.setItem(languageStorageKey, nextLanguage);
   };
 
+  useEffect(() => {
+    setLocalizedPlaceLabels({});
+
+    if (!person || language === 'en') {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const loadPlaceLabels = async () => {
+      try {
+        setLocalizedPlaceLabels(
+          await fetchLocalizedPlaceLabels(person, language, controller.signal),
+        );
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+
+        setLocalizedPlaceLabels({});
+      }
+    };
+
+    void loadPlaceLabels();
+
+    return () => controller.abort();
+  }, [language, person]);
+
   const handleAdvanceRoundIntro = useCallback(
     (event: PointerEvent<HTMLElement>) => {
       if (
         !person ||
         result ||
         isSessionComplete ||
-        isDailyRulesOpen ||
+        isRulesOpen ||
         isRoundReady ||
         isRevealLoading
       ) {
@@ -253,10 +290,10 @@ function App() {
     },
     [
       clearRevealTimer,
-      isDailyRulesOpen,
       isRevealLoading,
       isRoundReady,
       isSessionComplete,
+      isRulesOpen,
       person,
       result,
     ],
@@ -276,7 +313,7 @@ function App() {
   );
 
   useEffect(() => {
-    if (!person || result || isSessionComplete || isDailyRulesOpen) {
+    if (!person || result || isSessionComplete || isRulesOpen) {
       return;
     }
 
@@ -312,7 +349,7 @@ function App() {
         roundIntroTimerRef.current = null;
       }
     };
-  }, [isDailyRulesOpen, isSessionComplete, person, result]);
+  }, [isRulesOpen, isSessionComplete, person, result]);
 
   useEffect(() => {
     if (!isDailyMode || !isSessionComplete || !dailyFinalStats) {
@@ -364,6 +401,7 @@ function App() {
     });
     setDailyEndReason(null);
     setIsDailyRulesOpen(false);
+    setIsPracticeRulesOpen(false);
     setShareStatus(null);
     setChanceNotice(null);
     setIsSessionComplete(true);
@@ -394,6 +432,7 @@ function App() {
     setDailyFinalStats(null);
     setDailyEndReason(null);
     setIsDailyRulesOpen(false);
+    setIsPracticeRulesOpen(true);
     setShareStatus(null);
     setChanceNotice(null);
     resetRoundState();
@@ -425,6 +464,7 @@ function App() {
     setDailyFinalStats(null);
     setDailyEndReason(null);
     setIsDailyRulesOpen(true);
+    setIsPracticeRulesOpen(false);
     setShareStatus(null);
     setChanceNotice(null);
     setIsSessionComplete(false);
@@ -442,6 +482,7 @@ function App() {
     setDailyEndReason(null);
     setIsDailyGameOver(false);
     setIsDailyRulesOpen(false);
+    setIsPracticeRulesOpen(false);
     setShareStatus(null);
     setChanceNotice(null);
     resetRoundState();
@@ -884,14 +925,23 @@ function App() {
         deathCause={isEasyDailyMode ? currentLocalizedHints.methodOfDeath : undefined}
       />
       <div className="grain" aria-hidden="true" />
-      {isDailyMode && isDailyRulesOpen ? (
+      {isRulesOpen ? (
         <DailyRulesCard
           title={copy.rulesTitle}
-          items={dailyRulesItems}
-          startLabel={isEasyDailyMode ? copy.startEasyDaily : copy.startDaily}
+          items={rulesItems}
+          startLabel={
+            mode === 'practice'
+              ? copy.startPractice
+              : isEasyDailyMode
+                ? copy.startEasyDaily
+                : copy.startDaily
+          }
           helperIconsLabel={copy.hintsLabel}
           chanceIconLabel={copy.chanceLabel}
-          onDismiss={() => setIsDailyRulesOpen(false)}
+          onDismiss={() => {
+            setIsDailyRulesOpen(false);
+            setIsPracticeRulesOpen(false);
+          }}
         />
       ) : null}
       <div className={`ui-stack ${isPanelMinimized ? 'minimized' : ''}`}>
